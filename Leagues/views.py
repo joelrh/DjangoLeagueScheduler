@@ -1,7 +1,9 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import redirect, render, get_object_or_404
+from django.contrib.auth.models import User
 from django.http import Http404
 from Leagues.admin import TeamResource
 from tablib import Dataset
+from .forms import NewLeagueForm, NewTeamForm
 from django.http import HttpResponse
 from Leagues.models import League, Team, Division, Field
 
@@ -12,29 +14,48 @@ def home(request):
     fields = Field.objects.all()
     return render(request, 'home.html', {'teams': teams, 'fields': fields})
 
+
 def leagues(request, pk):
     league = get_object_or_404(League, pk=pk)
-    return render(request, 'leagues.html', {'league': league})
+    teams = Team.objects.all().filter(league=league)
+    return render(request, 'leagues.html', {'league': league, 'teams': teams})
+
 
 def teams(request, pk):
     team = get_object_or_404(Team, pk=pk)
     return render(request, 'teams.html', {'team': team})
 
+
 def fields(request, pk):
     field = get_object_or_404(Field, pk=pk)
     return render(request, 'fields.html', {'field': field})
+
+
+def divisions(request, pk):
+    division = get_object_or_404(Division, pk=pk)
+    teams = Team.objects.all().filter(division=division)
+    return render(request, 'divisions.html', {'division': division, 'teams': teams})
+
 
 def allfields(request):
     fields = Field.objects.all()
     return render(request, 'allfields.html', {'fields': fields})
 
+
 def allleagues(request):
     leagues = League.objects.all()
     return render(request, 'allleagues.html', {'leagues': leagues})
 
+
 def allteams(request):
     teams = Team.objects.all()
     return render(request, 'allteams.html', {'teams': teams})
+
+
+def alldivisions(request):
+    divisions = Division.objects.all()
+    return render(request, 'alldivisions.html', {'divisions': divisions})
+
 
 def simple_upload(request):
     if request.method == 'POST':
@@ -49,3 +70,27 @@ def simple_upload(request):
             person_resource.import_data(dataset, dry_run=False)  # Actually import now
 
     return render(request, 'core/simple_upload.html')
+
+def new_league(request):#, pk):
+    league = League()#get_object_or_404(League, pk=pk)
+    user = User.objects.first()  # TODO: get the currently logged in user
+    if request.method == 'POST':
+        form = NewLeagueForm(request.POST)
+        if form.is_valid():
+            league = form.save()
+            return redirect('allleagues')#, pk=league.pk)  # TODO: redirect to the created topic page
+    else:
+        form = NewLeagueForm()
+    return render(request, 'new_league.html', {'league': league, 'form': form})
+
+def new_team(request):#, pk):
+    team = Team()#get_object_or_404(League, pk=pk)
+    user = User.objects.first()  # TODO: get the currently logged in user
+    if request.method == 'POST':
+        form = NewTeamForm(request.POST)
+        if form.is_valid():
+            league = form.save()
+            return redirect('allteams')#, pk=league.pk)  # TODO: redirect to the created topic page
+    else:
+        form = NewTeamForm()
+    return render(request, 'new_team.html', {'team': team, 'form': form})

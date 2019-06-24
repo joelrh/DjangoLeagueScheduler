@@ -22,14 +22,14 @@
         {% for field in fields %}
             <tr>
                 <td>
-                    {{ field.name }}
+                    <a href="{% url 'fields' field.pk %}">{{ field.name }}</a>
                     <small class="text-muted d-block">{{ field.description }}</small>
                 </td>
                 <td class="align-middle">{{ field.description }}</td>
 {#                <td class="align-middle">{{ field.league }}</td>#}
                 <td>
                     {% for league in field.league.all %}
-                        {{ league.name}}
+                        <a href="{% url 'leagues' league.pk %}">{{ league.name }}</a>
                     {%  endfor %}
                 </td>
             </tr>

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}
+  {{ board.name }} - {{ block.super }}
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'alldivisions' %}">Divisions</a></li>
+{#  <li class="breadcrumb-item active">{{ field.name }}</li>#}
+{% endblock %}
+
+{% block content %}
+<table class="table">
+        <thead class="thead-inverse">
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>League</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for division in divisions %}
+            <tr>
+                <td>
+                    <a href="{% url 'divisions' division.pk %}">{{ division.name }}</a>
+                    <small class="text-muted d-block">{{ division.description }}</small>
+                </td>
+                <td class="align-middle">{{ division.description }}</td>
+                <td class="align-middle">
+                    <a href="{% url 'leagues' division.league.pk %}">{{ division.league }}</a>
+{#                    {{ division.league }}#}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

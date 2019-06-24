@@ -27,8 +27,12 @@
                     <small class="text-muted d-block">{{ team.description }}</small>
                 </td>
                 <td class="align-middle">{{ team.description }}</td>
-                <td class="align-middle">{{ team.league }}</td>
-                <td class="align-middle">{{ team.division }}</td>
+                <td class="align-middle">
+                    <a href="{% url 'leagues' team.league.pk %}">{{ team.league }}</a>
+                </td>
+                <td class="align-middle">
+                    <a href="{% url 'leagues' team.division.pk %}">{{ team.division }}</a>
+                </td>
             </tr>
 {#        {% endfor %}#}
         </tbody>

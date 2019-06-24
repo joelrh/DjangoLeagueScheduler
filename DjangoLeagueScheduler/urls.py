@@ -21,12 +21,17 @@ from Leagues import views
 
 urlpatterns = [
     url(r'^$', views.home, name='home'),
-    url(r'^leagues/(?P<pk>\d+)/$', views.leagues, ),
+    url(r'^leagues/(?P<pk>\d+)/$', views.leagues, name='leagues'),
     url(r'^teams/(?P<pk>\d+)/$', views.teams, name='teams'),
     url(r'^fields/(?P<pk>\d+)/$', views.fields, name='fields'),
+    url(r'^divisions/(?P<pk>\d+)/$', views.divisions, name='divisions'),
     url(r'^allfields$', views.allfields, name='allfields'),
     url(r'^allleagues$', views.allleagues, name='allleagues'),
     url(r'^allteams$', views.allteams, name='allteams'),
+    url(r'^alldivisions$', views.alldivisions, name='alldivisions'),
+    url(r'^new_league$', views.new_league, name='new_league'),
+    url(r'^new_team$', views.new_team, name='new_team'),
+    url(r'^leagues/(?P<pk>\d+)/new/$', views.new_league, name='new_league'),
 
 
     path('admin/', admin.site.urls),
