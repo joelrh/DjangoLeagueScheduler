@@ -1,0 +1,69 @@
+{% load static %}<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Teams</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+</head>
+<body>
+<div class="container">
+    <ol class="breadcrumb my-4">
+        <li class="breadcrumb-item active">Teams</li>
+    </ol>
+    <table class="table">
+        <thead class="thead-inverse">
+        <tr>
+            <th>Team</th>
+            <th>Description</th>
+            <th>League</th>
+            <th>Division</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for team in teams %}
+            <tr>
+                <td>
+                    {{ team.name }}
+                    <small class="text-muted d-block">{{ team.description }}</small>
+                </td>
+                <td class="align-middle">{{ team.description }}</td>
+                <td class="align-middle">{{ team.league }}</td>
+                <td class="align-middle">{{ team.division }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div class="container">
+    <ol class="breadcrumb my-4">
+        <li class="breadcrumb-item active">Fields</li>
+    </ol>
+    <table class="table">
+        <thead class="thead-inverse">
+        <tr>
+            <th>Field</th>
+            <th>Description</th>
+            <th>League</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for field in fields %}
+            <tr>
+                <td>
+                    {{ field.name }}
+                    <small class="text-muted d-block">{{ field.description }}</small>
+                </td>
+                <td class="align-middle">{{ field.description }}</td>
+{#                <td class="align-middle">{{ field.league }}</td>#}
+                <td>
+                    {% for league in field.league.all %}
+                        {{ league.name}}
+                    {%  endfor %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

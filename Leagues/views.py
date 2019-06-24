@@ -1,9 +1,17 @@
 from django.shortcuts import render
 from Leagues.admin import TeamResource
 from tablib import Dataset
+from django.http import HttpResponse
+from Leagues.models import League, Team, Division, Field
 
 
 # Create your views here.
+def home(request):
+    teams = Team.objects.all()
+    fields = Field.objects.all()
+    return render(request, 'home.html', {'teams': teams , 'fields':fields})
+
+
 def simple_upload(request):
     if request.method == 'POST':
         person_resource = TeamResource()
