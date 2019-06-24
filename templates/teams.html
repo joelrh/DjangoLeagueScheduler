@@ -1,10 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block title %}
+  {{ board.name }} - {{ block.super }}
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'allteams' %}">Teams</a></li>
+  <li class="breadcrumb-item active">{{ team.name }}</li>
+{% endblock %}
+
+{% block content %}
+    <table class="table">
+        <thead class="thead-inverse">
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>League</th>
+            <th>Division</th>
+        </tr>
+        </thead>
+        <tbody>
+{#        {% for team in teams %}#}
+            <tr>
+                <td>
+                    {{ team.name }}
+                    <small class="text-muted d-block">{{ team.description }}</small>
+                </td>
+                <td class="align-middle">{{ team.description }}</td>
+                <td class="align-middle">{{ team.league }}</td>
+                <td class="align-middle">{{ team.division }}</td>
+            </tr>
+{#        {% endfor %}#}
+        </tbody>
+    </table>
+{% endblock %}

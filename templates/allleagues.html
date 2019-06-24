@@ -5,10 +5,28 @@
 {% endblock %}
 
 {% block breadcrumb %}
-  <li class="breadcrumb-item"><a href="{% url 'home' %}">League</a></li>
-  <li class="breadcrumb-item active">{{ league.name }}</li>
+  <li class="breadcrumb-item"><a href="{% url 'allleagues' %}">Leagues</a></li>
+{#  <li class="breadcrumb-item active">{{ field.name }}</li>#}
 {% endblock %}
 
 {% block content %}
-    <!-- just leaving it empty for now. we will add core here soon. -->
+<table class="table">
+        <thead class="thead-inverse">
+        <tr>
+            <th>League</th>
+            <th>Description</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for league in leagues %}
+            <tr>
+                <td>
+                    {{ league.name }}
+                    <small class="text-muted d-block">{{ league.description }}</small>
+                </td>
+                <td class="align-middle">{{ league.description }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 {% endblock %}
