@@ -1,27 +1,42 @@
 {% load static %}<!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset="utf-8">
     <title>{% block title %}League{% endblock %}</title>
     <link href="https://fonts.googleapis.com/css?family=Peralta" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
-  </head>
-  <body>
+</head>
+<body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container">
-        <a class="navbar-brand" href="{% url 'home' %}">League</a>
-      </div>
-    </nav>
-
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-      <ol class="breadcrumb my-4">
+        <a class="navbar-brand" href="{% url 'home' %}">League Scheduler</a>
+    </div>
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'allleagues' %}">League</a>
+    </div>
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'alldivisions' %}">Division</a>
+    </div>
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'allteams' %}">Team</a>
+    </div>
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'allfields' %}">Field</a>
+    </div>
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'allgames' %}">Games</a>
+    </div>
+</nav>
+
+<div class="container">
+    <ol class="breadcrumb my-4">
         {% block breadcrumb %}
         {% endblock %}
-      </ol>
-      {% block content %}
-      {% endblock %}
-    </div>
-  </body>
+    </ol>
+    {% block content %}
+    {% endblock %}
+</div>
+</body>
 </html>

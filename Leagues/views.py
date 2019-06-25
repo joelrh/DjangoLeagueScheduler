@@ -3,13 +3,21 @@ from django.contrib.auth.models import User
 from django.http import Http404
 from Leagues.admin import TeamResource
 from tablib import Dataset
-from .forms import NewLeagueForm, NewTeamForm
+from .forms import NewLeagueForm, NewTeamForm, NewFieldForm, NewDivisionForm
 from django.http import HttpResponse
-from Leagues.models import League, Team, Division, Field
+from Leagues.models import League, Team, Division, Field, Game
+from Leagues.gameGenerator import generateGames
 
 
 # Create your views here.
 def home(request):
+    teams = Team.objects.all()
+    fields = Field.objects.all()
+    return render(request, 'home.html', {'teams': teams, 'fields': fields})
+
+
+def gengames(request):
+    generateGames()
     teams = Team.objects.all()
     fields = Field.objects.all()
     return render(request, 'home.html', {'teams': teams, 'fields': fields})
@@ -57,6 +65,11 @@ def alldivisions(request):
     return render(request, 'alldivisions.html', {'divisions': divisions})
 
 
+def allgames(request):
+    games = Game.objects.all()
+    return render(request, 'allgames.html', {'games': games})
+
+
 def simple_upload(request):
     if request.method == 'POST':
         person_resource = TeamResource()
@@ -71,26 +84,61 @@ def simple_upload(request):
 
     return render(request, 'core/simple_upload.html')
 
-def new_league(request):#, pk):
-    league = League()#get_object_or_404(League, pk=pk)
+
+def new_league(request):  # , pk):
+    league = League()  # get_object_or_404(League, pk=pk)
     user = User.objects.first()  # TODO: get the currently logged in user
     if request.method == 'POST':
         form = NewLeagueForm(request.POST)
         if form.is_valid():
             league = form.save()
-            return redirect('allleagues')#, pk=league.pk)  # TODO: redirect to the created topic page
+            return redirect('allleagues')  # , pk=league.pk)  # TODO: redirect to the created topic page
     else:
         form = NewLeagueForm()
     return render(request, 'new_league.html', {'league': league, 'form': form})
 
-def new_team(request):#, pk):
-    team = Team()#get_object_or_404(League, pk=pk)
+
+def new_team(request):  # , pk):
+    team = Team()  # get_object_or_404(League, pk=pk)
     user = User.objects.first()  # TODO: get the currently logged in user
     if request.method == 'POST':
         form = NewTeamForm(request.POST)
         if form.is_valid():
-            league = form.save()
-            return redirect('allteams')#, pk=league.pk)  # TODO: redirect to the created topic page
+            team = form.save()
+            generateGames()
+            return redirect('allteams')  # , pk=league.pk)  # TODO: redirect to the created topic page
     else:
         form = NewTeamForm()
     return render(request, 'new_team.html', {'team': team, 'form': form})
+
+
+def new_field(request):  # , pk):
+    field = Field()  # get_object_or_404(League, pk=pk)
+    user = User.objects.first()  # TODO: get the currently logged in user
+    if request.method == 'POST':
+        form = NewFieldForm(request.POST)
+        if form.is_valid():
+            field = form.save()
+            return redirect('allfields')  # , pk=league.pk)  # TODO: redirect to the created topic page
+    else:
+        form = NewFieldForm()
+    return render(request, 'new_field.html', {'field': field, 'form': form})
+
+
+def new_division(request):  # , pk):
+    division = Division()  # get_object_or_404(League, pk=pk)
+    user = User.objects.first()  # TODO: get the currently logged in user
+    if request.method == 'POST':
+        form = NewDivisionForm(request.POST)
+        if form.is_valid():
+            division = form.save()
+            return redirect('alldivisions')  # , pk=league.pk)  # TODO: redirect to the created topic page
+    else:
+        form = NewDivisionForm()
+    return render(request, 'new_division.html', {'division': division, 'form': form})
+
+
+def genGames(request):
+    generateGames
+    games = Game.objects.all()
+    return render(request, 'allgames.html', {'games': games})

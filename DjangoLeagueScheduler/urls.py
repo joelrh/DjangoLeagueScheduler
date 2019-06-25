@@ -29,10 +29,12 @@ urlpatterns = [
     url(r'^allleagues$', views.allleagues, name='allleagues'),
     url(r'^allteams$', views.allteams, name='allteams'),
     url(r'^alldivisions$', views.alldivisions, name='alldivisions'),
+    url(r'^allgames$', views.allgames, name='allgames'),
     url(r'^new_league$', views.new_league, name='new_league'),
     url(r'^new_team$', views.new_team, name='new_team'),
-    url(r'^leagues/(?P<pk>\d+)/new/$', views.new_league, name='new_league'),
-
-
+    url(r'^new_field$', views.new_field, name='new_field'),
+    url(r'^new_division$', views.new_division, name='new_division'),
+    # url(r'^new_division$', views.new_division, name='new_division'),
+    # url(r'^leagues/(?P<pk>\d+)/new/$', views.new_league, name='new_league'),
     path('admin/', admin.site.urls),
 ]

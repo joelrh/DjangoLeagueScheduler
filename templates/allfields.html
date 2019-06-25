@@ -1,16 +1,21 @@
 {% extends 'base.html' %}
 
 {% block title %}
-  {{ board.name }} - {{ block.super }}
+    {{ board.name }} - {{ block.super }}
 {% endblock %}
 
 {% block breadcrumb %}
-  <li class="breadcrumb-item"><a href="{% url 'allfields' %}">Fields</a></li>
-{#  <li class="breadcrumb-item active">{{ field.name }}</li>#}
+    <li class="breadcrumb-item"><a href="{% url 'allfields' %}">Fields</a></li>
+    {#  <li class="breadcrumb-item active">{{ field.name }}</li>#}
 {% endblock %}
 
 {% block content %}
-<table class="table">
+
+    <div class="mb-4">
+        <a href="{% url 'new_field' %}" class="btn btn-primary">New Field</a>
+    </div>
+
+    <table class="table">
         <thead class="thead-inverse">
         <tr>
             <th>Field</th>
@@ -26,11 +31,11 @@
                     <small class="text-muted d-block">{{ field.description }}</small>
                 </td>
                 <td class="align-middle">{{ field.description }}</td>
-{#                <td class="align-middle">{{ field.league }}</td>#}
+                {#                <td class="align-middle">{{ field.league }}</td>#}
                 <td>
                     {% for league in field.league.all %}
                         <a href="{% url 'leagues' league.pk %}">{{ league.name }}</a>
-                    {%  endfor %}
+                    {% endfor %}
                 </td>
             </tr>
         {% endfor %}

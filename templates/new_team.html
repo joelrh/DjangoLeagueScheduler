@@ -5,29 +5,29 @@
 {% block title %}Create a New Team{% endblock %}
 
 {% block breadcrumb %}
-  <li class="breadcrumb-item"><a href="{% url 'allteams' %}">Teams</a></li>
-{#  <li class="breadcrumb-item"><a href="{% url 'League' league.pk %}">{{ league.name }}</a></li>#}
-  <li class="breadcrumb-item active">New Team</li>
+    <li class="breadcrumb-item"><a href="{% url 'allteams' %}">Teams</a></li>
+    {#  <li class="breadcrumb-item"><a href="{% url 'League' league.pk %}">{{ league.name }}</a></li>#}
+    <li class="breadcrumb-item active">New Team</li>
 {% endblock %}
 
 {% block content %}
-  <form method="post" novalidate>
-    {% csrf_token %}
+    <form method="post" novalidate>
+        {% csrf_token %}
 
-    {% for field in form %}
-      <div class="form-group">
-        {{ field.label_tag }}
+        {% for field in form %}
+            <div class="form-group">
+                {{ field.label_tag }}
 
-        {% render_field field class="form-control" %}
+                {% render_field field class="form-control" %}
 
-        {% if field.help_text %}
-          <small class="form-text text-muted">
-            {{ field.help_text }}
-          </small>
-        {% endif %}
-      </div>
-    {% endfor %}
+                {% if field.help_text %}
+                    <small class="form-text text-muted">
+                        {{ field.help_text }}
+                    </small>
+                {% endif %}
+            </div>
+        {% endfor %}
 
-    <button type="submit" class="btn btn-success">Post</button>
-  </form>
+        <button type="submit" class="btn btn-success">Post</button>
+    </form>
 {% endblock %}
