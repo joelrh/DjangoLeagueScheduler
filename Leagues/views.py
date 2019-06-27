@@ -1,12 +1,15 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.models import User
+from django.db.models import Min, Avg, Max
+from django_tables2 import RequestConfig
 from django.http import Http404
 from Leagues.admin import TeamResource
 from tablib import Dataset
-from .forms import NewLeagueForm, NewTeamForm, NewFieldForm, NewDivisionForm
+from .forms import NewLeagueForm, NewTeamForm, NewFieldForm, NewDivisionForm, NewSlotForm
 from django.http import HttpResponse
-from Leagues.models import League, Team, Division, Field, Game
-from Leagues.gameGenerator import generateGames
+from Leagues.models import League, Team, Division, Field, Game, Slot
+from Leagues.gameGenerator import generateGames, updateGameScores
+from .tables import GamesTable, SlotsTable
 
 
 # Create your views here.
@@ -66,9 +69,21 @@ def alldivisions(request):
 
 
 def allgames(request):
-    games = Game.objects.all()
-    return render(request, 'allgames.html', {'games': games})
+    table = GamesTable(Game.objects.all())
+    RequestConfig(request).configure(table)
+    updateGameScores()
+    # return render(request, 'tutorial/people.html', {'table': table})
+    # games = Game.objects.all()
+    # leagues = League.objects.all()
+    return render(request, 'allgames.html', {'table': table})#, 'leagues': leagues})
 
+def allslots(request):
+    table = SlotsTable(Slot.objects.all())
+    RequestConfig(request).configure(table)
+    # return render(request, 'tutorial/people.html', {'table': table})
+    # games = Game.objects.all()
+    # leagues = League.objects.all()
+    return render(request, 'allslots.html', {'table': table})#, 'leagues': leagues})
 
 def simple_upload(request):
     if request.method == 'POST':
@@ -106,6 +121,7 @@ def new_team(request):  # , pk):
         if form.is_valid():
             team = form.save()
             generateGames()
+            updateGameScores()
             return redirect('allteams')  # , pk=league.pk)  # TODO: redirect to the created topic page
     else:
         form = NewTeamForm()
@@ -124,6 +140,17 @@ def new_field(request):  # , pk):
         form = NewFieldForm()
     return render(request, 'new_field.html', {'field': field, 'form': form})
 
+def new_slot(request):  # , pk):
+    slot = Slot()  # get_object_or_404(League, pk=pk)
+    user = User.objects.first()  # TODO: get the currently logged in user
+    if request.method == 'POST':
+        form = NewSlotForm(request.POST)
+        if form.is_valid():
+            slot = form.save()
+            return redirect('allslots')  # , pk=league.pk)  # TODO: redirect to the created topic page
+    else:
+        form = NewSlotForm()
+    return render(request, 'new_slot.html', {'slot': slot, 'form': form})
 
 def new_division(request):  # , pk):
     division = Division()  # get_object_or_404(League, pk=pk)
@@ -139,6 +166,19 @@ def new_division(request):  # , pk):
 
 
 def genGames(request):
-    generateGames
+    generateGames()
+    updateGameScores()
     games = Game.objects.all()
     return render(request, 'allgames.html', {'games': games})
+
+# def scheduleGames(request):
+#
+#     slots = Slot.objects.all().filter
+#     # update scores
+#     updateGameScores()
+#     # get lowest scoring game
+#     lowest Game.objects.order_by('score')[0]
+#
+#     (u'First1', 10)
+#     games = Game.objects.all()
+#     return render(request, 'allgames.html', {'games': games})

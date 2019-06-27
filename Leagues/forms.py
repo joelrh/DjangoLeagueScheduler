@@ -1,5 +1,6 @@
 from django import forms
-from .models import League, Team, Division, Field
+from .models import League, Team, Division, Field, Slot
+from django.contrib.admin import widgets
 
 
 class NewLeagueForm(forms.ModelForm):
@@ -24,3 +25,13 @@ class NewDivisionForm(forms.ModelForm):
     class Meta:
         model = Division
         fields = ['name', 'description', 'league']
+
+
+class NewSlotForm(forms.ModelForm):
+    class Meta:
+        model = Slot
+        fields = ['field', 'time', 'game']
+
+    def __init__(self, *args, **kwargs):
+        super(NewSlotForm, self).__init__(*args, **kwargs)
+        self.fields['time'].widget = widgets.AdminSplitDateTime()

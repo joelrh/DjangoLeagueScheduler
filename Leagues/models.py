@@ -8,6 +8,7 @@ class League(models.Model):
     name = models.CharField(max_length=20, null=False)
     abbreviation = models.CharField(max_length=2, null=False)
     description = models.TextField(blank=True, null=True)
+    # handicapp = models.IntegerField()
 
     def __str__(self):
         return self.name
@@ -46,18 +47,18 @@ class Game(models.Model):
     # team1 = models.ForeignKey(Team, on_delete=models.CASCADE)
     team1 = models.ForeignKey(Team, related_name='team1', on_delete=models.CASCADE)
     team2 = models.ForeignKey(Team, related_name='team2', on_delete=models.CASCADE)
-    # team2 = models.ManyToManyField(Team)
-    # team2 = models.ForeignKey(Team, on_delete=models.CASCADE)
-    # league = models.ForeignKey(League, on_delete=models.CASCADE)
+    league = models.ForeignKey(League, on_delete=models.CASCADE)
+    score = models.IntegerField(null=True)
 
     def __str__(self):
-        return str(self.team1.__str__() + " | " + self.team2.__str__())
+        return str(self.team1.__str__() + " | " + self.team2.__str__() + " | " + str(self.score))
 
 
 class Slot(models.Model):
-    field = models.ForeignKey(Field, on_delete=models.CASCADE)
-    time = models.DateTimeField
-    isScheduled = False
+    field = models.ForeignKey(Field, on_delete=models.CASCADE, null=False)
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, null=True)
+    time = models.DateTimeField(null=True)
+    isScheduled = models.BooleanField(default=False)
 
     def __str__(self):
         return str('')
