@@ -37,4 +37,23 @@
 {#        {% endfor %}#}
         </tbody>
     </table>
+        <table class="table">
+        <thead class="thead-inverse">
+        <tr>
+
+            <th>Game</th>
+
+        </tr>
+        </thead>
+        <tbody>
+
+        {% for game in games %}
+            <tr>
+                <td>
+                    {{ game.pk }} {{ game }}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 {% endblock %}

@@ -8,7 +8,7 @@ from tablib import Dataset
 from .forms import NewLeagueForm, NewTeamForm, NewFieldForm, NewDivisionForm, NewSlotForm
 from django.http import HttpResponse
 from Leagues.models import League, Team, Division, Field, Game, Slot
-from Leagues.gameGenerator import generateGames, updateGameScores
+from Leagues.gameGenerator import generateGames, updateGameScores, scheduleGames, removeSchedule
 from .tables import GamesTable, SlotsTable
 
 
@@ -18,13 +18,27 @@ def home(request):
     fields = Field.objects.all()
     return render(request, 'home.html', {'teams': teams, 'fields': fields})
 
-
-def gengames(request):
+def gen_games(request):
     generateGames()
+    updateGameScores()
+    games = Game.objects.all()
+    for game in games:
+        print(game)
     teams = Team.objects.all()
     fields = Field.objects.all()
     return render(request, 'home.html', {'teams': teams, 'fields': fields})
 
+def schedule_games(request):
+    teams = Team.objects.all()
+    fields = Field.objects.all()
+    scheduleGames()
+    return render(request, 'home.html', {'teams': teams, 'fields': fields})
+
+def reset_games(request):
+    teams = Team.objects.all()
+    fields = Field.objects.all()
+    removeSchedule()
+    return render(request, 'home.html', {'teams': teams, 'fields': fields})
 
 def leagues(request, pk):
     league = get_object_or_404(League, pk=pk)
@@ -34,7 +48,8 @@ def leagues(request, pk):
 
 def teams(request, pk):
     team = get_object_or_404(Team, pk=pk)
-    return render(request, 'teams.html', {'team': team})
+    games = Game.objects.all().filter(team1=team) | Game.objects.all().filter(team2=team)
+    return render(request, 'teams.html', {'team': team, 'games': games})
 
 
 def fields(request, pk):
@@ -71,11 +86,13 @@ def alldivisions(request):
 def allgames(request):
     table = GamesTable(Game.objects.all())
     RequestConfig(request).configure(table)
-    updateGameScores()
+    # generateGames()
+    # updateGameScores()
     # return render(request, 'tutorial/people.html', {'table': table})
     # games = Game.objects.all()
     # leagues = League.objects.all()
-    return render(request, 'allgames.html', {'table': table})#, 'leagues': leagues})
+    return render(request, 'allgames.html', {'table': table})  # , 'leagues': leagues})
+
 
 def allslots(request):
     table = SlotsTable(Slot.objects.all())
@@ -83,7 +100,8 @@ def allslots(request):
     # return render(request, 'tutorial/people.html', {'table': table})
     # games = Game.objects.all()
     # leagues = League.objects.all()
-    return render(request, 'allslots.html', {'table': table})#, 'leagues': leagues})
+    return render(request, 'allslots.html', {'table': table})  # , 'leagues': leagues})
+
 
 def simple_upload(request):
     if request.method == 'POST':
@@ -121,7 +139,7 @@ def new_team(request):  # , pk):
         if form.is_valid():
             team = form.save()
             generateGames()
-            updateGameScores()
+            # updateGameScores()
             return redirect('allteams')  # , pk=league.pk)  # TODO: redirect to the created topic page
     else:
         form = NewTeamForm()
@@ -140,6 +158,7 @@ def new_field(request):  # , pk):
         form = NewFieldForm()
     return render(request, 'new_field.html', {'field': field, 'form': form})
 
+
 def new_slot(request):  # , pk):
     slot = Slot()  # get_object_or_404(League, pk=pk)
     user = User.objects.first()  # TODO: get the currently logged in user
@@ -151,6 +170,7 @@ def new_slot(request):  # , pk):
     else:
         form = NewSlotForm()
     return render(request, 'new_slot.html', {'slot': slot, 'form': form})
+
 
 def new_division(request):  # , pk):
     division = Division()  # get_object_or_404(League, pk=pk)
@@ -165,11 +185,7 @@ def new_division(request):  # , pk):
     return render(request, 'new_division.html', {'division': division, 'form': form})
 
 
-def genGames(request):
-    generateGames()
-    updateGameScores()
-    games = Game.objects.all()
-    return render(request, 'allgames.html', {'games': games})
+
 
 # def scheduleGames(request):
 #

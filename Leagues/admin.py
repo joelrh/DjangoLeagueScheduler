@@ -9,19 +9,14 @@ from import_export import resources
 class GameAdmin(ImportExportModelAdmin):
     pass
 
-
 class GameResource(resources.ModelResource):
     class Meta:
         model = Game
 
 
-admin.site.register(Slot)
-
-
 @admin.register(Team)
 class TeamAdmin(ImportExportModelAdmin):
     pass
-
 
 class TeamResource(resources.ModelResource):
     class Meta:
@@ -32,7 +27,6 @@ class TeamResource(resources.ModelResource):
 class FieldAdmin(ImportExportModelAdmin):
     pass
 
-
 class FieldResource(resources.ModelResource):
     class Meta:
         model = Field
@@ -41,7 +35,6 @@ class FieldResource(resources.ModelResource):
 @admin.register(Division)
 class DivisionAdmin(ImportExportModelAdmin):
     pass
-
 
 class DivisionResource(resources.ModelResource):
     class Meta:
@@ -52,7 +45,15 @@ class DivisionResource(resources.ModelResource):
 class LeagueAdmin(ImportExportModelAdmin):
     pass
 
-
 class LeagueResource(resources.ModelResource):
     class Meta:
         model = League
+
+
+@admin.register(Slot)
+class SlotAdmin(ImportExportModelAdmin):
+    pass
+
+class SlotResource(resources.ModelResource):
+    class Meta:
+        model = Slot

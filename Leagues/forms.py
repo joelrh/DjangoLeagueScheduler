@@ -28,10 +28,12 @@ class NewDivisionForm(forms.ModelForm):
 
 
 class NewSlotForm(forms.ModelForm):
+    time = forms.DateTimeField(widget=forms.DateInput(attrs={'placeholder': 'YYYY-MM-DD HH:MM', 'required': 'required'}),input_formats=['%d/%m/%Y %H:%M'])
+
     class Meta:
         model = Slot
-        fields = ['field', 'time', 'game']
-
-    def __init__(self, *args, **kwargs):
-        super(NewSlotForm, self).__init__(*args, **kwargs)
-        self.fields['time'].widget = widgets.AdminSplitDateTime()
+        fields = ['field', 'time']
+    #
+    # def __init__(self, *args, **kwargs):
+    #     super(NewSlotForm, self).__init__(*args, **kwargs)
+    #     self.fields['time'].widget = widgets.AdminSplitDateTime()

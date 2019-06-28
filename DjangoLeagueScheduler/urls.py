@@ -36,6 +36,10 @@ urlpatterns = [
     url(r'^new_field$', views.new_field, name='new_field'),
     url(r'^new_division$', views.new_division, name='new_division'),
     url(r'^new_slot$', views.new_slot, name='new_slot'),
+    url(r'^schedule_games', views.schedule_games, name='schedule_games'),
+    url(r'^reset_games', views.reset_games, name='reset_games'),
+    url(r'^gen_games', views.gen_games, name='gen_games'),
+
     # url(r'^new_division$', views.new_division, name='new_division'),
     # url(r'^leagues/(?P<pk>\d+)/new/$', views.new_league, name='new_league'),
     path('admin/', admin.site.urls),

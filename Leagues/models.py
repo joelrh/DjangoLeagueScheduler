@@ -49,16 +49,17 @@ class Game(models.Model):
     team2 = models.ForeignKey(Team, related_name='team2', on_delete=models.CASCADE)
     league = models.ForeignKey(League, on_delete=models.CASCADE)
     score = models.IntegerField(null=True)
+    isScheduled = models.BooleanField(default=False)
 
     def __str__(self):
-        return str(self.team1.__str__() + " | " + self.team2.__str__() + " | " + str(self.score))
+        return str(self.team1.__str__() + " | " + self.team2.__str__() + " | " + str(self.score) + " | " + str(self.isScheduled))
 
 
 class Slot(models.Model):
     field = models.ForeignKey(Field, on_delete=models.CASCADE, null=False)
     game = models.ForeignKey(Game, on_delete=models.CASCADE, null=True)
     time = models.DateTimeField(null=True)
-    isScheduled = models.BooleanField(default=False)
+    # isScheduled = models.BooleanField(default=False)
 
     def __str__(self):
-        return str('')
+        return str(str(self.pk) + " | " + self.field.__str__() + " | " + self.time.__str__() + " | " + self.game.__str__())
