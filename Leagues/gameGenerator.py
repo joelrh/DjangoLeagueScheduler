@@ -5,14 +5,6 @@ from django.db.models import Q
 
 def generateGames():
     print('GENERATING GAMES')
-    # """ Create a schedule for the teams in the list and return it"""
-    # N*(N-1)/2
-
-    # byeTeam = Team("BYE","BYE","BYE","BYE")
-    # if len(teams.teams) % 2 == 1: teams.addTeam(byeTeam)
-
-    # matchups = []
-    # iterator = 1
     leagues = League.objects.all()
     for league in leagues:
         teams = Team.objects.all().filter(league=league)
@@ -24,25 +16,10 @@ def generateGames():
                     game = Game(team1=team1, team2=team2, league=team1.league)
                     game.save()
                     print('ADDING: ' + game.__str__())
-                # iterator = iterator + 1
-
-    # for team1 in teams.teams:
-    #     for team2 in teams.teams[iterator:]:
-    #         matchups.append([team1, team2])
-    #     iterator = iterator + 1
-    # # print(len(matchups))
-    # return matchups
-
-
-# generateGames()
 
 def updateGameScore(game):
-    # print('UPDATING SCORE FOR GAME:  ' + game.__str__())
-    score = 0
 
-    # len(Slot.objects.all())
-    # number of scheduled games for team 1 * 5
-    # number of scheduled games for team 2 * 5
+    score = 0
     gameswithteam = Game.objects.all().filter(Q(team1=game.team1) |
                                               Q(team1=game.team2) |
                                               Q(team2=game.team1) |
@@ -117,25 +94,34 @@ def scheduleGames():
 
     # slots.objects.order_by('?')
 
-    for slot in slots:
-        # updateGameScores()
-        # get lowest scoring game
-        # updateGameScores()
-        gamesSortedByLowestScore = Game.objects.order_by('score').filter(isScheduled = False)
-        # for game in gamesSortedByLowestScore:
-        #     print(game)
-        for game in gamesSortedByLowestScore:
-            # updateGameScore(game)
-            if len(Slot.objects.all().filter(game=game)) == 0:
-                if scheduleGame(slot, game):
-                    print('game scheduled')
-                    print(slot)
-                    print(slot.game)
-                    print('---------------------------------------------------')
-                    print('---------------------------------------------------')
-                    print('NUMBER GAMES UNSCHEDULED: ' + str(len(Game.objects.all().filter(isScheduled=False))))
-                    print('NUMBER SLOTS UNSCHEDULED: ' + str(len(Slot.objects.all().filter(game=None))))
-                    print('---------------------------------------------------')
-                    break
-    elapsed_time = time.time() - t
-    print('ELAPSED TIME:' + str(elapsed_time))
+    while len(Game.objects.all().filter(isScheduled=False)) >0 and len(Slot.objects.all().filter(game=None)) >0:
+        for slot in slots:
+            # updateGameScores()
+            # get lowest scoring game
+            # updateGameScores()
+            # gamesSortedByLowestScore = Game.objects.order_by('score').filter(isScheduled = False)
+            # This query only gets unscheduled games that are compatible with the field in the slot
+            gamesSortedByLowestScore = Game.objects.order_by('score').filter(isScheduled=False, league__in=slot.field.league.all())
+            # TODO: improve filter to only retrieve games that are compatible with the field
+            # for game in gamesSortedByLowestScore:
+            #     print(game)
+            for game in gamesSortedByLowestScore:
+                # updateGameScore(game)
+                if len(Slot.objects.all().filter(game=game)) == 0:
+                    if scheduleGame(slot, game):
+                        print('game scheduled')
+                        print(slot)
+                        print(slot.game)
+                        break
+            print('---------------------------------------------------')
+            print('NUMBER GAMES UNSCHEDULED: ' + str(len(Game.objects.all().filter(isScheduled=False))))
+            print('NUMBER SLOTS UNSCHEDULED: ' + str(len(Slot.objects.all().filter(game=None))))
+            print('---------------------------------------------------')
+        elapsed_time = time.time() - t
+        print('ELAPSED TIME:' + str(elapsed_time))
+
+#     TODO: NEED TO ADD SOME SORT OF PERFORMANCE GRADE
+# num games in conference
+# num games per team
+# num games scheduled
+# num slot remaining
