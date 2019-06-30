@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 
 {% block title %}
-  {{ board.name }} - {{ block.super }}
+    {{ board.name }} - {{ block.super }}
 {% endblock %}
 
 {% block breadcrumb %}
-  <li class="breadcrumb-item"><a href="{% url 'allteams' %}">Teams</a></li>
-  <li class="breadcrumb-item active">{{ team.name }}</li>
+    <li class="breadcrumb-item"><a href="{% url 'allteams' %}">Teams</a></li>
+    <li class="breadcrumb-item active">{{ team.name }}</li>
 {% endblock %}
 
 {% block content %}
@@ -20,24 +20,25 @@
         </tr>
         </thead>
         <tbody>
-{#        {% for team in teams %}#}
-            <tr>
-                <td>
-                    {{ team.name }}
-                    <small class="text-muted d-block">{{ team.description }}</small>
-                </td>
-                <td class="align-middle">{{ team.description }}</td>
-                <td class="align-middle">
-                    <a href="{% url 'leagues' team.league.pk %}">{{ team.league }}</a>
-                </td>
-                <td class="align-middle">
-                    <a href="{% url 'leagues' team.division.pk %}">{{ team.division }}</a>
-                </td>
-            </tr>
-{#        {% endfor %}#}
+        {#        {% for team in teams %}#}
+        <tr>
+            <td>
+                {{ team.name }}
+                <small class="text-muted d-block">{{ team.description }}</small>
+            </td>
+            <td class="align-middle">{{ team.description }}</td>
+            <td class="align-middle">
+                <a href="{% url 'leagues' team.league.pk %}">{{ team.league }}</a>
+            </td>
+            <td class="align-middle">
+                <a href="{% url 'leagues' team.division.pk %}">{{ team.division }}</a>
+            </td>
+        </tr>
+        {#        {% endfor %}#}
         </tbody>
     </table>
-        <table class="table">
+        {{ slots     | safe}}
+    <table class="table">
         <thead class="thead-inverse">
         <tr>
 

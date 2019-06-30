@@ -36,6 +36,8 @@
 {#        </tbody>#}
 {#    </table>#}
     <body>
+    {{ table2 | safe }}
+    {% for key, value in df %} <tr> <td> Key: {{ key }} </td> <td> Value: {{ value }} </td> </tr> {% endfor %}
     {%   render_table table %}
     </body>
 {% endblock %}

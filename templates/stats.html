@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {{ board.name }} - {{ block.super }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'stats' %}">Stats</a></li>
+
+{% endblock %}
+
+{% block content %}
+    <table class="table">
+    <tr>
+        <td>Games Unscheduled: {{ numGamesUnscheduled }}</td>
+        </tr>
+        <tr>
+        <td>Slots Unscheduled: {{ numSlotsUnscheduled }}</td>
+    </tr>
+    </table>
+    {{ df | safe }}
+
+{% endblock %}

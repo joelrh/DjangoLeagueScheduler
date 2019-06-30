@@ -8,6 +8,7 @@ class League(models.Model):
     name = models.CharField(max_length=20, null=False)
     abbreviation = models.CharField(max_length=2, null=False)
     description = models.TextField(blank=True, null=True)
+
     # handicapp = models.IntegerField()
 
     def __str__(self):
@@ -51,15 +52,21 @@ class Game(models.Model):
     score = models.IntegerField(null=True)
     isScheduled = models.BooleanField(default=False)
 
+    def shortstr(self):
+        return str(self.team1.__str__() + " | " + self.team2.__str__())
+
     def __str__(self):
-        return str(self.team1.__str__() + " | " + self.team2.__str__() + " | " + str(self.score) + " | " + str(self.isScheduled))
+        return str(self.team1.__str__() + " | " + self.team2.__str__() + " | " + str(self.score) + " | " + str(
+            self.isScheduled))
 
 
 class Slot(models.Model):
     field = models.ForeignKey(Field, on_delete=models.CASCADE, null=False)
     game = models.ForeignKey(Game, on_delete=models.CASCADE, null=True)
     time = models.DateTimeField(null=True)
+
     # isScheduled = models.BooleanField(default=False)
 
     def __str__(self):
-        return str(str(self.pk) + " | " + self.field.__str__() + " | " + self.time.__str__() + " | " + self.game.__str__())
+        return str(
+            str(self.pk) + " | " + self.field.__str__() + " | " + self.time.__str__() + " | " + self.game.__str__())

@@ -8,15 +8,20 @@ from tablib import Dataset
 from .forms import NewLeagueForm, NewTeamForm, NewFieldForm, NewDivisionForm, NewSlotForm
 from django.http import HttpResponse
 from Leagues.models import League, Team, Division, Field, Game, Slot
-from Leagues.gameGenerator import generateGames, updateGameScores, scheduleGames, removeSchedule
+from Leagues.gameGenerator import generateGames, updateGameScores, scheduleGames, removeSchedule, displayStats
 from .tables import GamesTable, SlotsTable
+import pandas as pd
+import numpy as np
+from Leagues.tools import convertDatetimeToString
 
 
 # Create your views here.
 def home(request):
-    teams = Team.objects.all()
-    fields = Field.objects.all()
-    return render(request, 'home.html', {'teams': teams, 'fields': fields})
+    df, numGamesUnscheduled, numSlotsUnscheduled = displayStats()
+    return render(request, 'home.html', {'df': df.to_html(justify='center'),
+                                          'numGamesUnscheduled':numGamesUnscheduled,
+                                          'numSlotsUnscheduled': numSlotsUnscheduled})
+
 
 def gen_games(request):
     generateGames()
@@ -24,21 +29,27 @@ def gen_games(request):
     games = Game.objects.all()
     for game in games:
         print(game)
-    teams = Team.objects.all()
-    fields = Field.objects.all()
-    return render(request, 'home.html', {'teams': teams, 'fields': fields})
+    df, numGamesUnscheduled, numSlotsUnscheduled = displayStats()
+    return render(request, 'home.html', {'df': df.to_html(justify='center'),
+                                         'numGamesUnscheduled': numGamesUnscheduled,
+                                         'numSlotsUnscheduled': numSlotsUnscheduled})
+
 
 def schedule_games(request):
-    teams = Team.objects.all()
-    fields = Field.objects.all()
     scheduleGames()
-    return render(request, 'home.html', {'teams': teams, 'fields': fields})
+    df, numGamesUnscheduled, numSlotsUnscheduled = displayStats()
+    return render(request, 'home.html', {'df': df.to_html(justify='center'),
+                                         'numGamesUnscheduled': numGamesUnscheduled,
+                                         'numSlotsUnscheduled': numSlotsUnscheduled})
+
 
 def reset_games(request):
-    teams = Team.objects.all()
-    fields = Field.objects.all()
     removeSchedule()
-    return render(request, 'home.html', {'teams': teams, 'fields': fields})
+    df, numGamesUnscheduled, numSlotsUnscheduled = displayStats()
+    return render(request, 'home.html', {'df': df.to_html(justify='center'),
+                                         'numGamesUnscheduled': numGamesUnscheduled,
+                                         'numSlotsUnscheduled': numSlotsUnscheduled})
+
 
 def leagues(request, pk):
     league = get_object_or_404(League, pk=pk)
@@ -49,7 +60,30 @@ def leagues(request, pk):
 def teams(request, pk):
     team = get_object_or_404(Team, pk=pk)
     games = Game.objects.all().filter(team1=team) | Game.objects.all().filter(team2=team)
-    return render(request, 'teams.html', {'team': team, 'games': games})
+    slots = Slot.objects.all()
+    game_names = []
+    slot_name = ['slot']
+    for game in games:
+        game_names.append(game.shortstr())
+    matrix = []
+
+    df = pd.DataFrame(matrix, columns=['slot'], index=game_names)
+    # df.columns = ['Game','slot']
+    data = []
+
+    for game in games:
+        try:
+            data.append([game.shortstr(), Slot.objects.get(game=game)])
+        except Slot.DoesNotExist:
+            data.append([game.shortstr(), 'NOT SCHEDULED'])
+
+    df = pd.DataFrame(data, columns=['Game', 'Slot'])
+
+    table = df
+    # print(df)
+
+    # slots = Slot.objects.all().filter(games)
+    return render(request, 'teams.html', {'team': team, 'games': games, 'slots':df.to_html})
 
 
 def fields(request, pk):
@@ -65,7 +99,24 @@ def divisions(request, pk):
 
 def allfields(request):
     fields = Field.objects.all()
-    return render(request, 'allfields.html', {'fields': fields})
+    slots = Slot.objects.all()
+    slot_names = []
+    field_names = []
+    for slot in slots:
+
+        if slot.time.strftime("%Y-%m-%d %H:%M") not in slot_names:
+            slot_names.append(slot.time.strftime("%Y-%m-%d %H:%M"))
+    for field in fields:
+        field_names.append(field.name)
+    matrix = []
+    df = pd.DataFrame(matrix, columns=field_names, index=slot_names)
+
+    for slot in slots:
+        df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = True
+
+    table = df
+
+    return render(request, 'allfields.html', {'fields': fields, 'slots': slots, 'table': df.to_html(justify='center')})
 
 
 def allleagues(request):
@@ -100,7 +151,32 @@ def allslots(request):
     # return render(request, 'tutorial/people.html', {'table': table})
     # games = Game.objects.all()
     # leagues = League.objects.all()
-    return render(request, 'allslots.html', {'table': table})  # , 'leagues': leagues})
+    fields = Field.objects.all()
+    slots = Slot.objects.all()
+    slot_names = []
+    field_names = []
+    for slot in slots:
+
+        if slot.time.strftime("%Y-%m-%d %H:%M") not in slot_names:
+            slot_names.append(slot.time.strftime("%Y-%m-%d %H:%M"))
+    for field in fields:
+        field_names.append(field.name)
+    matrix = []
+    df = pd.DataFrame(matrix, columns=field_names, index=slot_names)
+
+    for slot in slots:
+        if not slot.game == None:
+            df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = slot.game.shortstr()
+
+    # table2 = df
+
+    return render(request, 'allslots.html', {'table': table,'table2': df.to_html(justify='center')})
+
+def stats(request):
+    df, numGamesUnscheduled, numSlotsUnscheduled = displayStats()
+    return render(request, 'stats.html', {'df': df.to_html(justify='center'),
+                                          'numGamesUnscheduled':numGamesUnscheduled,
+                                          'numSlotsUnscheduled': numSlotsUnscheduled})
 
 
 def simple_upload(request):
@@ -183,9 +259,6 @@ def new_division(request):  # , pk):
     else:
         form = NewDivisionForm()
     return render(request, 'new_division.html', {'division': division, 'form': form})
-
-
-
 
 # def scheduleGames(request):
 #
