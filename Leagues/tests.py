@@ -30,9 +30,3 @@ class BoardTopicsTests(TestCase):
         url = reverse('leagues', kwargs={'pk': 99})
         response = self.client.get(url)
         self.assertEquals(response.status_code, 404)
-
-    # def test_board_topics_url_resolves_board_topics_view(self):
-    #     view = resolve('/leagues/1/')
-    #     self.assertEquals(view.func, leagues)
-
-# TODO:  add tests to check the hyperlink feature

@@ -84,10 +84,8 @@ def teams(request, pk):
     df = pd.DataFrame(data, columns=['Game', 'Slot'])
 
     table = df
-    # print(df)
 
-    # slots = Slot.objects.all().filter(games)
-    return render(request, 'teams.html', {'team': team, 'games': games, 'slots':df.to_html})
+    return render(request, 'teams.html', {'team': team, 'games': games, 'slots': df.to_html})
 
 
 def fields(request, pk):
@@ -141,20 +139,12 @@ def alldivisions(request):
 def allgames(request):
     table = GamesTable(Game.objects.all())
     RequestConfig(request).configure(table)
-    # generateGames()
-    # updateGameScores()
-    # return render(request, 'tutorial/people.html', {'table': table})
-    # games = Game.objects.all()
-    # leagues = League.objects.all()
     return render(request, 'allgames.html', {'table': table})  # , 'leagues': leagues})
 
 
 def allslots(request):
     table = SlotsTable(Slot.objects.all())
     RequestConfig(request).configure(table)
-    # return render(request, 'tutorial/people.html', {'table': table})
-    # games = Game.objects.all()
-    # leagues = League.objects.all()
     fields = Field.objects.all()
     slots = Slot.objects.all()
     slot_names = []
@@ -172,14 +162,13 @@ def allslots(request):
         if not slot.game == None:
             df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = slot.game.shortstr()
 
-    # table2 = df
+    return render(request, 'allslots.html', {'table': table, 'table2': df.to_html(justify='center')})
 
-    return render(request, 'allslots.html', {'table': table,'table2': df.to_html(justify='center')})
 
 def stats(request):
     df, numGamesUnscheduled, numSlotsUnscheduled, totalScore = displayStats()
     return render(request, 'stats.html', {'df': df.to_html(justify='center'),
-                                          'numGamesUnscheduled':numGamesUnscheduled,
+                                          'numGamesUnscheduled': numGamesUnscheduled,
                                           'numSlotsUnscheduled': numSlotsUnscheduled,
                                           'totalScore': totalScore})
 
@@ -264,15 +253,3 @@ def new_division(request):  # , pk):
     else:
         form = NewDivisionForm()
     return render(request, 'new_division.html', {'division': division, 'form': form})
-
-# def scheduleGames(request):
-#
-#     slots = Slot.objects.all().filter
-#     # update scores
-#     updateGameScores()
-#     # get lowest scoring game
-#     lowest Game.objects.order_by('score')[0]
-#
-#     (u'First1', 10)
-#     games = Game.objects.all()
-#     return render(request, 'allgames.html', {'games': games})

@@ -22,27 +22,37 @@ def generateGames():
 
 def updateGameScore(game):
     score = 0
-    # gameswithteam = Game.objects.all().filter(Q(team1=game.team1) |
-    #                                           Q(team1=game.team2) |
-    #                                           Q(team2=game.team1) |
-    #                                           Q(team2=game.team2),
-    #                                           isScheduled=True)
+
+    # HANDICAP REDUCED AS NUMBER OF GAMES SCHEDULED INCREASES
     numRelatedscheduledGames = len(Slot.objects.all().filter(Q(game__team1=game.team1) |
                                                              Q(game__team1=game.team2) |
                                                              Q(game__team2=game.team1) |
                                                              Q(game__team2=game.team2)))
-    score = score + (numRelatedscheduledGames * 50)
-    # game is interdivisional: -20
+    score = score + (numRelatedscheduledGames * 100)
+
+    # INTERDIVISIONAL GAMES HAVE A HIGHER HANDICAP TO ENSURE THEY ARE SCHEDULED FIRST
     if game.team1.division == game.team2.division:
         score = score - 80
+    teams = [game.team1, game.team2]
+
+    # GAMES WITH LOWER THAN AVERAGE NUMBER OF GAMES ARE FURTHER HANDICAPPED - PER LEAGUE
+    leagues = League.objects.all()
+    numTeamsInLeague = len(Team.objects.all().filter(league=game.league))
+    numScheduledGamesInLeague = len(Slot.objects.all().filter(game__league = game.league))
+    averageScheduledGamesInLeague = numScheduledGamesInLeague/numTeamsInLeague
+    # teamsInLeague = League.objects.all().filter(league = league)
+    for team in teams:
+        schduledGamesForTeam = len(Slot.objects.all().filter(Q(game__team1 = team) | Q(game__team2 = team)))
+        if schduledGamesForTeam < averageScheduledGamesInLeague:
+            score = score - ((averageScheduledGamesInLeague-schduledGamesForTeam)*100)
+
+    # GAMES WITH THE MOST RESTRICTIONS SHOULD BE SCHEDULED FIRST
 
     game.score = score
     game.save()
-    # if # games for team 1 < average scheduled for all teams:  - 20
-    # if # games for team 2 < average scheduled for all teams:  - 20
-
 
 def updateGameScores():
+
     # generateGames()
     print('UPDATING SCORES')
     t = time.time()
@@ -51,6 +61,7 @@ def updateGameScores():
     # slots = Slot.objects.all()
     for game in games:
         updateGameScore(game)
+        game.save()
 
     elapsed_time = time.time() - t
     print('ELAPSED TIME:' + str(elapsed_time))
@@ -115,6 +126,8 @@ def scheduleGame(slot, game, enforceLateCap):
                 print('TOO MANY LATE GAMES ALREADY SCHEDULED FOR ', team_.name)
     if Compatible: print('NO LATE GAME CONFLICTS')
 
+    # ENSURE NO MORE THAN 2 GAMES PER WEEK
+
     if Compatible:
         print('SCHEDULING GAME')
         slot.game = game
@@ -152,16 +165,12 @@ def scheduleGames():
         else:
             enforceLateCap = False
         for slot in slots:
-            # updateGameScores()
-            # get lowest scoring game
-            # updateGameScores()
-            # gamesSortedByLowestScore = Game.objects.order_by('score').filter(isScheduled = False)
+
             # This query only gets unscheduled games that are compatible with the field in the slot
             gamesSortedByLowestScore = Game.objects.order_by('score').filter(isScheduled=False,
-                                                                             league__in=slot.field.league.all()).order_by(
-                '?')
-            # for game in gamesSortedByLowestScore:
-            #     print(game)
+                                                                             league__in=slot.field.league.all())
+            for game in gamesSortedByLowestScore:
+                print(game)
             for game in gamesSortedByLowestScore:
                 # updateGameScore(game)
                 if len(Slot.objects.all().filter(game=game)) == 0:
@@ -176,14 +185,6 @@ def scheduleGames():
             print('---------------------------------------------------')
     elapsed_time = time.time() - t
     print('ELAPSED TIME:' + str(elapsed_time))
-
-    # desplayStats()
-    #     TODO: NEED TO ADD SOME SORT OF PERFORMANCE GRADE
-    # num games in conference
-    # num games per team
-    # num games scheduled
-    # num slot remaining
-
 
 def displayStats():
     teams = Team.objects.all().order_by('league')
