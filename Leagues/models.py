@@ -1,7 +1,16 @@
 from django.db import models
 
 
-# For all models here, need to check and prevent duplication
+# # For all models here, need to check and prevent duplication
+# TODO: Definitely need to run multiple runs and keep the best scorer
+#
+# TODO: Need to be able to check for coach overlap
+#
+# TODO: Ideally update score based on the current slot available - will take time but will reduce the total number of iterations
+#
+# TODO: Need the ability to accept games or pre-schedule games
+#
+# TODO: Add iteration that removes a game from a high scoring team and gives the others a shot
 
 # Create your models here.
 class League(models.Model):

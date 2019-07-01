@@ -11,12 +11,15 @@
 
 {% block content %}
     <table class="table">
-    <tr>
-        <td>Games Unscheduled: {{ numGamesUnscheduled }}</td>
+        <tr>
+            <td>Games Unscheduled: {{ numGamesUnscheduled }}</td>
         </tr>
         <tr>
-        <td>Slots Unscheduled: {{ numSlotsUnscheduled }}</td>
-    </tr>
+            <td>Slots Unscheduled: {{ numSlotsUnscheduled }}</td>
+        </tr>
+        <tr>
+            <td>Optimization Score: {{ totalScore }}</td>
+        </tr>
     </table>
     {{ df | safe }}
 

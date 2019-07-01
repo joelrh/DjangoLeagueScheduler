@@ -22,12 +22,16 @@ def generateGames():
 
 def updateGameScore(game):
     score = 0
-    gameswithteam = Game.objects.all().filter(Q(team1=game.team1) |
-                                              Q(team1=game.team2) |
-                                              Q(team2=game.team1) |
-                                              Q(team2=game.team2),
-                                              isScheduled=True)
-    score = score + len(gameswithteam) * 5
+    # gameswithteam = Game.objects.all().filter(Q(team1=game.team1) |
+    #                                           Q(team1=game.team2) |
+    #                                           Q(team2=game.team1) |
+    #                                           Q(team2=game.team2),
+    #                                           isScheduled=True)
+    numRelatedscheduledGames = len(Slot.objects.all().filter(Q(game__team1=game.team1) |
+                                                             Q(game__team1=game.team2) |
+                                                             Q(game__team2=game.team1) |
+                                                             Q(game__team2=game.team2)))
+    score = score + (numRelatedscheduledGames * 50)
     # game is interdivisional: -20
     if game.team1.division == game.team2.division:
         score = score - 80
@@ -65,10 +69,12 @@ def removeSchedule():
         slot.save()
 
 
-def scheduleGame(slot, game):
+def scheduleGame(slot, game, enforceLateCap):
     print('ATTEMPTING TO SCHEDULE GAME:  ' + game.__str__())
     print('SLOT' + slot.__str__())
     Compatible = False
+
+    ## CHECK LEAGUE COMPATIBILITY
     leagues = League.objects.all().filter(field=slot.field)
     for league in leagues:
         if game.league == league:
@@ -76,12 +82,13 @@ def scheduleGame(slot, game):
             print('SLOT LEAGUE IS COMPATIBLE WITH GAME')
     if not Compatible: print('SLOT LEAGUE IS NOT COMPATIBLE WITH GAME')
     # Find all scheduled games and ensure that this game is not on the same day
-    gameswithteam = Game.objects.all().filter(Q(team1=game.team1) |
-                                              Q(team1=game.team2) |
-                                              Q(team2=game.team1) |
-                                              Q(team2=game.team2),
-                                              isScheduled=True)
-    for game_ in gameswithteam:
+    gameswithteams = Game.objects.all().filter(Q(team1=game.team1) |
+                                               Q(team1=game.team2) |
+                                               Q(team2=game.team1) |
+                                               Q(team2=game.team2),
+                                               isScheduled=True)
+    ## ENSURE NO DOUBLE BOOKING
+    for game_ in gameswithteams:
         try:
             if slot.time.date() == Slot.objects.get(game=game_).time.date():
                 Compatible = False
@@ -91,13 +98,28 @@ def scheduleGame(slot, game):
             pass
     if Compatible: print('NO GAMES ALREADY SCHEDULED ON THIS DAY WITH TEAMS')
 
+    ## ENSURE NO MORE THAN 2 LATE GAMES
+    teams = [game.team1, game.team2]
+    if slot.time.hour > 18 and enforceLateCap:
+        for team_ in teams:
+            # numLateGames=0
+            # slotswithteams = Slot.objects.all().filter(Q(game__team1=team_) |
+            #                                       Q(game__team2=team_))
+            # for slot_ in slotswithteams:
+            #     if slot_.time.hour > 18: numLateGames=numLateGames+1
+            # if numLateGames>=2:
+            #     Compatible = False
+            #     print('TOO MANY LATE GAMES ALREADY SCHEDULED FOR ', team_.name)
+            if len(Slot.objects.all().filter(Q(game__team1=team_) | Q(game__team2=team_), time__hour__gt=18)) >= 2:
+                Compatible = False
+                print('TOO MANY LATE GAMES ALREADY SCHEDULED FOR ', team_.name)
+    if Compatible: print('NO LATE GAME CONFLICTS')
+
     if Compatible:
         print('SCHEDULING GAME')
         slot.game = game
         game.isScheduled = True
-        # updateGameScore(game)
         game.save()
-        # slot.isScheduled = True
         slot.save()
         updateGameScores()
         return True
@@ -112,7 +134,8 @@ def scheduleGames():
     t = time.time()
     updateGameScores()
     print('SCHEDULING ALL GAMES')
-    slots = Slot.objects.all().order_by('?')
+
+    slots = Slot.objects.all()
     # need to only get slots that are not already scheduled
     # update scores
     for slot in slots:
@@ -121,8 +144,13 @@ def scheduleGames():
     # slots.objects.order_by('?')
     numberRetried = 0
     while len(Game.objects.all().filter(isScheduled=False)) > 0 and len(
-            Slot.objects.all().filter(game=None)) > 0 and numberRetried < 5:
+            Slot.objects.all().filter(game=None)) > 0 and numberRetried < 10:
         numberRetried = numberRetried + 1
+        slots = Slot.objects.all().filter(game=None).order_by('?')
+        if numberRetried > 5:
+            enforceLateCap = False
+        else:
+            enforceLateCap = False
         for slot in slots:
             # updateGameScores()
             # get lowest scoring game
@@ -130,14 +158,14 @@ def scheduleGames():
             # gamesSortedByLowestScore = Game.objects.order_by('score').filter(isScheduled = False)
             # This query only gets unscheduled games that are compatible with the field in the slot
             gamesSortedByLowestScore = Game.objects.order_by('score').filter(isScheduled=False,
-                                                                             league__in=slot.field.league.all()).order_by('?')
-            # TODO: improve filter to only retrieve games that are compatible with the field
+                                                                             league__in=slot.field.league.all()).order_by(
+                '?')
             # for game in gamesSortedByLowestScore:
             #     print(game)
             for game in gamesSortedByLowestScore:
                 # updateGameScore(game)
                 if len(Slot.objects.all().filter(game=game)) == 0:
-                    if scheduleGame(slot, game):
+                    if scheduleGame(slot, game, enforceLateCap):
                         print('game scheduled')
                         print(slot)
                         print(slot.game)
@@ -158,14 +186,17 @@ def scheduleGames():
 
 
 def displayStats():
-    teams = Team.objects.all()
+    teams = Team.objects.all().order_by('league')
     slot_names = []
     team_names = []
-    column_names = ['description', 'numScheduled', 'numUnscheduled','numDivisionalScheduled', 'numTotalDivisional']
+    column_names = ['description', 'numScheduled', 'numUnscheduled', 'numDivisionalScheduled', 'numTotalDivisional',
+                    'numLateGames']
     for team in teams:
         team_names.append(team.name)
     matrix = []
     df = pd.DataFrame(matrix, columns=column_names, index=team_names)
+
+    totalScore=0
 
     for team in teams:
         teamName = team.name
@@ -179,11 +210,15 @@ def displayStats():
                                                            team1__division=team.division,
                                                            team2__division=team.division,
                                                            team1__league=team.league))
+        numLateGames = len(Slot.objects.all().filter(Q(game__team1=team) | Q(game__team2=team), time__hour__gt=18))
         df.at[teamName, 'description'] = team.__str__()
         df.at[teamName, 'numScheduled'] = numScheduled
         df.at[teamName, 'numUnscheduled'] = numUnscheduled
         df.at[teamName, 'numDivisionalScheduled'] = numDivisionalScheduled
         df.at[teamName, 'numTotalDivisional'] = numTotalDivisional
+        df.at[teamName, 'numLateGames'] = numLateGames
+
+        totalScore = totalScore + numScheduled + numDivisionalScheduled - numUnscheduled - numLateGames
 
     print('---------------------------------------------------')
     print('NUMBER GAMES UNSCHEDULED: ' + str(len(Game.objects.all().filter(isScheduled=False))))
@@ -193,5 +228,4 @@ def displayStats():
     numGamesUnscheduled = len(Game.objects.all().filter(isScheduled=False))
     numSlotsUnscheduled = len(Slot.objects.all().filter(game=None))
 
-    return df, numGamesUnscheduled, numSlotsUnscheduled
-
+    return df, numGamesUnscheduled, numSlotsUnscheduled, totalScore

@@ -17,10 +17,11 @@ from Leagues.tools import convertDatetimeToString
 
 # Create your views here.
 def home(request):
-    df, numGamesUnscheduled, numSlotsUnscheduled = displayStats()
+    df, numGamesUnscheduled, numSlotsUnscheduled, totalScore = displayStats()
     return render(request, 'home.html', {'df': df.to_html(justify='center'),
-                                          'numGamesUnscheduled':numGamesUnscheduled,
-                                          'numSlotsUnscheduled': numSlotsUnscheduled})
+                                         'numGamesUnscheduled': numGamesUnscheduled,
+                                         'numSlotsUnscheduled': numSlotsUnscheduled,
+                                         'totalScore': totalScore})
 
 
 def gen_games(request):
@@ -29,26 +30,29 @@ def gen_games(request):
     games = Game.objects.all()
     for game in games:
         print(game)
-    df, numGamesUnscheduled, numSlotsUnscheduled = displayStats()
+    df, numGamesUnscheduled, numSlotsUnscheduled, totalScore = displayStats()
     return render(request, 'home.html', {'df': df.to_html(justify='center'),
                                          'numGamesUnscheduled': numGamesUnscheduled,
-                                         'numSlotsUnscheduled': numSlotsUnscheduled})
+                                         'numSlotsUnscheduled': numSlotsUnscheduled,
+                                         'totalScore': totalScore})
 
 
 def schedule_games(request):
     scheduleGames()
-    df, numGamesUnscheduled, numSlotsUnscheduled = displayStats()
+    df, numGamesUnscheduled, numSlotsUnscheduled, totalScore = displayStats()
     return render(request, 'home.html', {'df': df.to_html(justify='center'),
                                          'numGamesUnscheduled': numGamesUnscheduled,
-                                         'numSlotsUnscheduled': numSlotsUnscheduled})
+                                         'numSlotsUnscheduled': numSlotsUnscheduled,
+                                         'totalScore': totalScore})
 
 
 def reset_games(request):
     removeSchedule()
-    df, numGamesUnscheduled, numSlotsUnscheduled = displayStats()
+    df, numGamesUnscheduled, numSlotsUnscheduled, totalScore = displayStats()
     return render(request, 'home.html', {'df': df.to_html(justify='center'),
                                          'numGamesUnscheduled': numGamesUnscheduled,
-                                         'numSlotsUnscheduled': numSlotsUnscheduled})
+                                         'numSlotsUnscheduled': numSlotsUnscheduled,
+                                         'totalScore': totalScore})
 
 
 def leagues(request, pk):
@@ -173,10 +177,11 @@ def allslots(request):
     return render(request, 'allslots.html', {'table': table,'table2': df.to_html(justify='center')})
 
 def stats(request):
-    df, numGamesUnscheduled, numSlotsUnscheduled = displayStats()
+    df, numGamesUnscheduled, numSlotsUnscheduled, totalScore = displayStats()
     return render(request, 'stats.html', {'df': df.to_html(justify='center'),
                                           'numGamesUnscheduled':numGamesUnscheduled,
-                                          'numSlotsUnscheduled': numSlotsUnscheduled})
+                                          'numSlotsUnscheduled': numSlotsUnscheduled,
+                                          'totalScore': totalScore})
 
 
 def simple_upload(request):
