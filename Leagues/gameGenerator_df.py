@@ -5,22 +5,7 @@ import pandas as pd
 from django.db import connection
 
 
-def generateGames():
-    print('GENERATING GAMES')
-    leagues = League.objects.all()
-    for league in leagues:
-        teams = Team.objects.all().filter(league=league).order_by('?')
-        for team1 in teams:
-            for team2 in teams:
-                checkTeam1 = Game.objects.all().filter(team1=team1, team2=team2)
-                checkTeam2 = Game.objects.all().filter(team1=team2, team2=team1)
-                if (len(checkTeam1) + len(checkTeam2) == 0) and team1 != team2:
-                    game = Game(team1=team1, team2=team2, league=team1.league)
-                    game.save()
-                    print('ADDING: ' + game.__str__())
-
-
-def updateGameScore(game):
+def updateGameScore_df(game):
     score = 0
 
     # HANDICAP REDUCED AS NUMBER OF GAMES SCHEDULED INCREASES
@@ -52,7 +37,7 @@ def updateGameScore(game):
     game.save()
 
 
-def updateGameScores():
+def updateGameScores_df():
     # query = str(Team.objects.all().query)
     # df = pd.read_sql_query(query, connection)
 
@@ -65,27 +50,14 @@ def updateGameScores():
     # slots = Slot.objects.all()
     for game in games:
         if len(Slot.objects.all().filter(game=game)) == 0:
-            updateGameScore(game)
+            updateGameScore_df(game)
             game.save()
 
     elapsed_time = time.time() - t
     print('ELAPSED TIME:' + str(elapsed_time))
 
 
-def removeSchedule():
-    # games = Game.objects.all().filter(isScheduled=True)
-    # for game in games:
-    #     print('UNSCHEDULING' + game.__str__())
-    #     game.isScheduled = False
-    #     game.save()
-    slots = Slot.objects.all()
-    for slot in slots:
-        print('UNSCHEDULING' + slot.__str__())
-        slot.game = None
-        slot.save()
-
-
-def scheduleGame(slot, game, enforceLateCap):
+def scheduleGame_df(slot, game, enforceLateCap):
     print('ATTEMPTING TO SCHEDULE GAME:  ' + game.__str__())
     print('SLOT' + slot.__str__())
     Compatible = False
@@ -138,14 +110,14 @@ def scheduleGame(slot, game, enforceLateCap):
         # game.isScheduled = True
         # game.save()
         slot.save()
-        updateGameScores()
+        updateGameScores_df()
         return True
     else:
         print('GAME NOT COMPATIBLE')
     return False
 
 
-def scheduleGames():
+def scheduleGames_df():
     # generateGames()
 
     query = str(Team.objects.all().query)
@@ -156,7 +128,7 @@ def scheduleGames():
     Games_df = pd.read_sql_query(query, connection)
 
     t = time.time()
-    updateGameScores()
+    updateGameScores_df()
     print('SCHEDULING ALL GAMES')
 
     slots = Slot.objects.all()
@@ -189,7 +161,7 @@ def scheduleGames():
             for game in gamesSortedByLowestScore:
                 # updateGameScore(game)
                 if len(Slot.objects.all().filter(game=game)) == 0:
-                    if scheduleGame(slot, game, enforceLateCap):
+                    if scheduleGame_df(slot, game, enforceLateCap):
                         print('game scheduled')
                         print(slot)
                         print(slot.game)
@@ -203,48 +175,5 @@ def scheduleGames():
     print('ELAPSED TIME:' + str(elapsed_time))
 
 
-def displayStats():
-    teams = Team.objects.all().order_by('league')
-    slot_names = []
-    team_names = []
-    column_names = ['description', 'numScheduled', 'numUnscheduled', 'numDivisionalScheduled', 'numTotalDivisional',
-                    'numLateGames']
-    for team in teams:
-        team_names.append(team.name)
-    matrix = []
-    df = pd.DataFrame(matrix, columns=column_names, index=team_names)
-
-    totalScore = 0
-
-    for team in teams:
-        teamName = team.name
-        numScheduled = len(Slot.objects.all().filter(Q(game__team1=team) | Q(game__team2=team)))
-        # numUnscheduled = len(Game.objects.all().filter(Q(team1=team) | Q(team2=team), isScheduled=False))
-        numUnscheduled = len(Game.objects.all().filter(Q(team1=team) | Q(team2=team))) - numScheduled
-        numDivisionalScheduled = len(Slot.objects.all().filter(Q(game__team1=team) | Q(game__team2=team),
-                                                               game__team1__division=team.division,
-                                                               game__team2__division=team.division,
-                                                               game__team1__league=team.league))
-        numTotalDivisional = len(Game.objects.all().filter(Q(team1=team) | Q(team2=team),
-                                                           team1__division=team.division,
-                                                           team2__division=team.division,
-                                                           team1__league=team.league))
-        numLateGames = len(Slot.objects.all().filter(Q(game__team1=team) | Q(game__team2=team), time__hour__gt=18))
-        df.at[teamName, 'description'] = team.__str__()
-        df.at[teamName, 'numScheduled'] = numScheduled
-        df.at[teamName, 'numUnscheduled'] = numUnscheduled
-        df.at[teamName, 'numDivisionalScheduled'] = numDivisionalScheduled
-        df.at[teamName, 'numTotalDivisional'] = numTotalDivisional
-        df.at[teamName, 'numLateGames'] = numLateGames
-
-        totalScore = totalScore + numScheduled + numDivisionalScheduled - numUnscheduled - numLateGames
-
-    print('---------------------------------------------------')
-    print('NUMBER GAMES UNSCHEDULED: ' + str(len(Game.objects.all()) - len(Slot.objects.all().exclude(game=None))))
-    print('NUMBER SLOTS UNSCHEDULED: ' + str(len(Slot.objects.all().filter(game=None))))
-    print('---------------------------------------------------')
-
-    numGamesUnscheduled = str(len(Game.objects.all()) - len(Slot.objects.all().exclude(game=None)))
-    numSlotsUnscheduled = len(Slot.objects.all().filter(game=None))
-
-    return df, numGamesUnscheduled, numSlotsUnscheduled, totalScore
+def transferScheduleFromDfToObject():
+    print('')
