@@ -3,6 +3,7 @@ import time
 from django.db.models import Q
 import pandas as pd
 from django.db import connection
+from Leagues.gameGenerator_df import *
 
 
 def generateGames():
@@ -93,7 +94,7 @@ def scheduleGame(slot, game, enforceLateCap):
     ## CHECK LEAGUE COMPATIBILITY
     leagues = League.objects.all().filter(field=slot.field)
     for league in leagues:
-        if game.league == league:
+        if game.league_id == league.pk:
             Compatible = True
             print('SLOT LEAGUE IS COMPATIBLE WITH GAME')
     if not Compatible: print('SLOT LEAGUE IS NOT COMPATIBLE WITH GAME')
@@ -147,6 +148,10 @@ def scheduleGame(slot, game, enforceLateCap):
 
 def scheduleGames():
     # generateGames()
+
+    GG = gameGenerator_df()
+    GG.scheduleGames_df()
+
 
     query = str(Team.objects.all().query)
     Teams_df = pd.read_sql_query(query, connection)
