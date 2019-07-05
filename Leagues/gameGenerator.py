@@ -152,60 +152,54 @@ def scheduleGames():
     GG = gameGenerator_df()
     GG.scheduleGames_df()
 
+    DBVersion = False
+    if DBVersion:
+        t = time.time()
+        updateGameScores()
+        print('SCHEDULING ALL GAMES')
 
-    query = str(Team.objects.all().query)
-    Teams_df = pd.read_sql_query(query, connection)
-    query = str(Slot.objects.all().query)
-    Slots_df = pd.read_sql_query(query, connection)
-    query = str(Game.objects.all().query)
-    Games_df = pd.read_sql_query(query, connection)
-
-    t = time.time()
-    updateGameScores()
-    print('SCHEDULING ALL GAMES')
-
-    slots = Slot.objects.all()
-    # need to only get slots that are not already scheduled
-    # update scores
-    for slot in slots:
-        print(slot)
-
-    # slots.objects.order_by('?')
-    numberRetried = 0
-    # while len(Game.objects.all().filter(isScheduled=False)) > 0 and len(
-    #         Slot.objects.all().filter(game=None)) > 0 and numberRetried < 10:
-    while len(Game.objects.exclude(id__in=Slot.objects.all().exclude(game=None).values_list('game'))) > 0 and \
-            len(Slot.objects.all().filter(game=None)) > 0 and \
-            numberRetried < 10:
-        numberRetried = numberRetried + 1
-        slots = Slot.objects.all().filter(game=None).order_by('?')
-        if numberRetried > 5:
-            enforceLateCap = False
-        else:
-            enforceLateCap = True
+        slots = Slot.objects.all()
+        # need to only get slots that are not already scheduled
+        # update scores
         for slot in slots:
+            print(slot)
 
-            # This query only gets unscheduled games that are compatible with the field in the slot, and sorts them by score (low -> high)
-            gamesSortedByLowestScore = Game.objects.order_by('score'). \
-                exclude(id__in=Slot.objects.all().exclude(game=None).values_list('game')). \
-                filter(league__in=slot.field.league.all())
-            # for game in gamesSortedByLowestScore:
-            #     print(game)
-            for game in gamesSortedByLowestScore:
-                # updateGameScore(game)
-                if len(Slot.objects.all().filter(game=game)) == 0:
-                    if scheduleGame(slot, game, enforceLateCap):
-                        print('game scheduled')
-                        print(slot)
-                        print(slot.game)
-                        break
-            print('---------------------------------------------------')
-            print('NUMBER GAMES UNSCHEDULED: ' + str(
-                len(Game.objects.all()) - len(Slot.objects.all().exclude(game=None))))
-            print('NUMBER SLOTS UNSCHEDULED: ' + str(len(Slot.objects.all().filter(game=None))))
-            print('---------------------------------------------------')
-    elapsed_time = time.time() - t
-    print('ELAPSED TIME:' + str(elapsed_time))
+        # slots.objects.order_by('?')
+        numberRetried = 0
+        # while len(Game.objects.all().filter(isScheduled=False)) > 0 and len(
+        #         Slot.objects.all().filter(game=None)) > 0 and numberRetried < 10:
+        while len(Game.objects.exclude(id__in=Slot.objects.all().exclude(game=None).values_list('game'))) > 0 and \
+                len(Slot.objects.all().filter(game=None)) > 0 and \
+                numberRetried < 10:
+            numberRetried = numberRetried + 1
+            slots = Slot.objects.all().filter(game=None).order_by('?')
+            if numberRetried > 5:
+                enforceLateCap = False
+            else:
+                enforceLateCap = True
+            for slot in slots:
+
+                # This query only gets unscheduled games that are compatible with the field in the slot, and sorts them by score (low -> high)
+                gamesSortedByLowestScore = Game.objects.order_by('score'). \
+                    exclude(id__in=Slot.objects.all().exclude(game=None).values_list('game')). \
+                    filter(league__in=slot.field.league.all())
+                # for game in gamesSortedByLowestScore:
+                #     print(game)
+                for game in gamesSortedByLowestScore:
+                    # updateGameScore(game)
+                    if len(Slot.objects.all().filter(game=game)) == 0:
+                        if scheduleGame(slot, game, enforceLateCap):
+                            print('game scheduled')
+                            print(slot)
+                            print(slot.game)
+                            break
+                print('---------------------------------------------------')
+                print('NUMBER GAMES UNSCHEDULED: ' + str(
+                    len(Game.objects.all()) - len(Slot.objects.all().exclude(game=None))))
+                print('NUMBER SLOTS UNSCHEDULED: ' + str(len(Slot.objects.all().filter(game=None))))
+                print('---------------------------------------------------')
+        elapsed_time = time.time() - t
+        print('ELAPSED TIME:' + str(elapsed_time))
 
 
 def displayStats():
