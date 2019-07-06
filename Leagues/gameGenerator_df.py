@@ -36,16 +36,23 @@ class gameGenerator_df():
                 numberRetried < 10:
             numberRetried = numberRetried + 1
             slots = self.slots.query('game_id.isnull()')
-            shuffledSlots = slots.sample(frac=1)
-            # TODO:  NEED TO RANK SLOTS BASED ON TIME/DAY.  THIS WILL HELP ENSURE MOST IMPORTANT GAMES ARE SCHEDULED ON THE BEST SLOTS
+            # shuffledSlots = slots.sample(frac=1)
+            # slots2=slots
+            slots['time'] = pd.to_datetime(slots['time'])
+            # put the timestamp part of the datetime into a separate column
+            slots['timeofday'] = slots['time'].dt.time
+            # filter by times between 9 and 10 and sort by timestamp
+            slots = slots.sort_values('timeofday')
 
-            # TODO: make the late cap increase gradually to prevent over scheduling one team to late slots
+            # TODO: Need to update scores based on the slot that is being scheduled
+            # TODO: If the scores are updated based on the slot, I can implement a # days between games optimization
+            # TODO: Need to find the optimal score based on num slots available for each league - something nice to compare optimization
 
             if numberRetried > 5:
                 lateCap = lateCap + 1
 
             print('LATE CAP: ', str(lateCap))
-            for slotIndex, slot in shuffledSlots.iterrows():
+            for slotIndex, slot in slots.iterrows():
 
                 # This query only gets unscheduled games that are compatible with the field in the slot, randomizes them,
                 # and sorts them by score (low -> high)
@@ -178,35 +185,30 @@ class gameGenerator_df():
 
     def updateGameScore_df(self, gameIndex, game):
 
-        # if game.team1_id == 2 or game.team2_id == 2:
-        #     print('yankees')
+        # TODO:the games with teams, scheduled games, etc should be passed to this function and not calculated
+        # each time.  This will save computing time
 
-        SCHEDULEDGAMEPENALTY = True
+        SCHEDULEDGAMEPENALTY = False
         UNCHEDULEDGAMEHANDICAP = True
-        MORETHANMINIMUMLEAGUESCHEDULEPENALTY = True
+        MORETHANMINIMUMLEAGUESCHEDULEPENALTY = False
         INTERDIVISIONALHANDICAP = True
-        LOWERTHANAVERAGESCHEDULEPENALTY = True
+        LOWERTHANAVERAGESCHEDULEPENALTY = False
 
         score = 0
-
+        scheduledGames = self.slots.query('not game_id.isnull()')
+        gameswithteams = pd.concat([self.games[self.games.team1_id == game.team1_id],
+                                    self.games[self.games.team1_id == game.team2_id],
+                                    self.games[self.games.team2_id == game.team1_id],
+                                    self.games[self.games.team2_id == game.team2_id]])
         # HANDICAP REDUCED AS NUMBER OF GAMES SCHEDULED INCREASES
         if SCHEDULEDGAMEPENALTY:
-            scheduledGames = self.slots.query('not game_id.isnull()')
-            gameswithteams = pd.concat([self.games[self.games.team1_id == game.team1_id],
-                                        self.games[self.games.team1_id == game.team2_id],
-                                        self.games[self.games.team2_id == game.team1_id],
-                                        self.games[self.games.team2_id == game.team2_id]])
-            gameswithteams = gameswithteams[gameswithteams['id'].isin(scheduledGames['game_id'])]
-            scheduledGamesWithTeams = scheduledGames[scheduledGames['game_id'].isin(gameswithteams['id'])]
+            gameswithteams2 = gameswithteams[gameswithteams['id'].isin(scheduledGames['game_id'])]
+            scheduledGamesWithTeams = scheduledGames[scheduledGames['game_id'].isin(gameswithteams2['id'])]
             score = score + (len(scheduledGamesWithTeams) * 100)
 
         # HANDICAP REDUCED AS NUMBER OF UNSCHEDULED GAMES DECREASES
         if UNCHEDULEDGAMEHANDICAP:
             unscheduledGames = self.games[~self.games['id'].isin(self.slots.query('not game_id.isnull()')['game_id'])]
-            gameswithteams = pd.concat([self.games[self.games.team1_id == game.team1_id],
-                                        self.games[self.games.team1_id == game.team2_id],
-                                        self.games[self.games.team2_id == game.team1_id],
-                                        self.games[self.games.team2_id == game.team2_id]])
             unscheduledgameswithteams = gameswithteams[gameswithteams['id'].isin(unscheduledGames['id'])]
             # unscheduledGamesWithTeams = unscheduledGames[unscheduledGames['game_id'].isin(gameswithteams['id'])]
             score = score - (len(unscheduledgameswithteams) * 200)
@@ -246,6 +248,8 @@ class gameGenerator_df():
             scheduledGamesInLeague = scheduledGames[scheduledGames['game_id'].isin(gamesinLeague['id'])]
             numScheduledGamesInLeague = len(scheduledGamesInLeague)
             averageScheduledGamesInLeaguePerTeam = numScheduledGamesInLeague * 2 / numTeamsInLeague
+            gameswithteams2 = gameswithteams[gameswithteams['id'].isin(scheduledGames['game_id'])]
+            scheduledGamesWithTeams = scheduledGames[scheduledGames['game_id'].isin(gameswithteams2['id'])]
             if len(scheduledGamesWithTeams) < averageScheduledGamesInLeaguePerTeam:
                 score = score - ((averageScheduledGamesInLeaguePerTeam - len(scheduledGamesWithTeams)) * 100)
 
