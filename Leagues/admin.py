@@ -1,6 +1,6 @@
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
-from .models import League, Division, Team, Field, Game, Slot
+from .models import League, Division, Team, Field, Game, Slot, SiteConfiguration
 from import_export import resources
 
 
@@ -57,3 +57,11 @@ class SlotAdmin(ImportExportModelAdmin):
 class SlotResource(resources.ModelResource):
     class Meta:
         model = Slot
+
+@admin.register(SiteConfiguration)
+class SiteConfigurationAdmin(ImportExportModelAdmin):
+    pass
+
+class SiteConfigurationResource(resources.ModelResource):
+    class Meta:
+        model = SiteConfiguration

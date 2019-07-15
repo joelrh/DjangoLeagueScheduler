@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'import_export',
     'widget_tweaks',
     'django_tables2',
+    'solo',
 
     # local apps
     'Leagues',

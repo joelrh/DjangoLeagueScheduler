@@ -9,6 +9,43 @@
 <br class="container">League Schedule Maker</br>
 
 {% block content %}
+
+
+
+    <input id="slider1" type="range" value="3" min="1" max="20" step="1"/>
+
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="/resources/demos/style.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script>
+        $(function () {
+            $("#slider-range").slider({
+                range: false,
+                min: 0,
+                max: 20,
+                values: [2],
+                slide: function (event, ui) {
+                    $("#amount").val(ui.values[0]);
+                }
+            });
+            $("#amount").val($("#slider-range").slider("values", 0));
+        });
+    </script>
+    <script>
+        $(".selector").slider({
+            slide: function (event, ui) {
+            }
+        });
+        $(".selector").on("slide", function (event, ui) {
+        });
+    </script>
+    <p>
+        <label for="amount">Max Late Games</label>
+        <input type="text" id="amount" readonly style="border:0; color:#f6931f; font-weight:bold;">
+    </p>
+
+    <div id="slider-range"></div>
     {#    <table class="table">#}
     {#        <tr>#}
     {#            <td>#}

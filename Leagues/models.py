@@ -25,6 +25,23 @@ from django.db import models
 # TODO: add ability to run back through the schedule and remove games with the best situated teams and rerun with games for least suited teams
 
 # Create your models here.
+
+from django.db import models
+from solo.models import SingletonModel
+
+class SiteConfiguration(models.Model):
+    maxLateGames = models.IntegerField(null=True)
+    enforceLateGameCap = models.BooleanField(default=False)
+    maxGamesPerWeek = models.IntegerField(null=True)
+
+    @classmethod
+    def object(cls):
+        return cls._default_manager.all().first() # Since only one item
+
+    def save(self, *args, **kwargs):
+        self.id = 1
+        return super().save(*args, **kwargs)
+
 class League(models.Model):
     name = models.CharField(max_length=20, null=False)
     abbreviation = models.CharField(max_length=2, null=False)
