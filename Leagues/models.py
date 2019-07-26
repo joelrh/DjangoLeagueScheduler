@@ -23,6 +23,12 @@ from django.db import models
 # TODO: how to let the user make scheduling suggestions / corrections / confirmations
 #
 # TODO: add ability to run back through the schedule and remove games with the best situated teams and rerun with games for least suited teams
+#
+# TODO: add some sore of schedule distribution for each team
+#
+# TODO: need to make weekend games prime and reflect on a teams score
+#
+# TODO: how to even out the game schedule distribution for teams
 
 # Create your models here.
 
@@ -46,7 +52,7 @@ class League(models.Model):
     name = models.CharField(max_length=20, null=False)
     abbreviation = models.CharField(max_length=2, null=False)
     description = models.TextField(blank=True, null=True)
-
+    # TODO: need to add maxGames to this to prevent excessive number of games
     def __str__(self):
         return self.name
 
@@ -69,6 +75,7 @@ class Team(models.Model):
 
     def __str__(self):
         return str(self.name.__str__() + "-" + self.division.abbreviation.__str__() + "-" + self.league.__str__())
+        # TODO: for some reason this is always displaying "Major" as the league
 
 
 class Field(models.Model):
@@ -85,7 +92,9 @@ class Game(models.Model):
     team2 = models.ForeignKey(Team, related_name='team2', on_delete=models.CASCADE)
     league = models.ForeignKey(League, on_delete=models.CASCADE)
     score = models.IntegerField(null=True)
+    enabled = models.BooleanField(default=True)
     # isScheduled = models.BooleanField(default=False)
+    # enabled TODO:need to add a field to allow the user to disable a game from being scheduled
 
     def shortstr(self):
         return str(self.team1.__str__() + " | " + self.team2.__str__())
@@ -102,3 +111,11 @@ class Slot(models.Model):
     def __str__(self):
         return str(
             str(self.pk) + " | " + self.field.__str__() + " | " + self.time.__str__() + " | " + self.game.__str__())
+
+class Coach(models.Model):
+    firstName = models.CharField(max_length=20, null=False)
+    lastName = models.CharField(max_length=20, null=False)
+
+    def __str__(self):
+        return str(
+            self.firstName.__str__() + " " + self.lastName.__str__())

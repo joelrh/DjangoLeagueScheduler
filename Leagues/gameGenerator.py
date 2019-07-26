@@ -104,6 +104,7 @@ def scheduleGame(slot, game, enforceLateCap):
                                                Q(game__team2=game.team1) |
                                                Q(game__team2=game.team2))
     ## ENSURE NO DOUBLE BOOKING
+    # TODO: this does not appear to be working properly
     for game_ in gameswithteams:
         try:
             if slot.time.date() == Slot.objects.get(game=game_).time.date():
@@ -203,6 +204,7 @@ def scheduleGames():
 
 
 def displayStats():
+    # TODO : add average time between games to the stats table
     teams = Team.objects.all().order_by('league')
     slot_names = []
     team_names = []
@@ -229,7 +231,7 @@ def displayStats():
                                                            team2__division=team.division,
                                                            team1__league=team.league))
         numLateGames = len(Slot.objects.all().filter(Q(game__team1=team) | Q(game__team2=team), time__hour__gt=18))
-        df.at[teamName, 'description'] = team.__str__()
+        df.at[teamName, 'description'] = team.__str__()# TODO: this is always displaying "Major" as the league
         df.at[teamName, 'numScheduled'] = numScheduled
         df.at[teamName, 'numUnscheduled'] = numUnscheduled
         df.at[teamName, 'numDivisionalScheduled'] = numDivisionalScheduled
