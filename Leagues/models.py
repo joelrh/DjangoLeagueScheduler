@@ -100,7 +100,7 @@ class Game(models.Model):
         return str(self.team1.__str__() + " | " + self.team2.__str__())
 
     def __str__(self):
-        return str(self.team1.__str__() + " | " + self.team2.__str__() + " | " + str(self.score))
+        return str(self.team1.__str__() + " | " + self.team2.__str__())
 
 
 class Slot(models.Model):

@@ -16,26 +16,6 @@
             <a href="{% url 'new_slot' %}" class="btn btn-primary">New Slot</a>
         </div>
 
-{#    <table class="table">#}
-{#        <thead class="thead-inverse">#}
-{#        <tr>#}
-{##}
-{#            <th>Game</th>#}
-{##}
-{#        </tr>#}
-{#        </thead>#}
-{#        <tbody>#}
-{##}
-{#        {% for game in games %}#}
-{#            <tr>#}
-{#                <td>#}
-{#                    {{ game.pk }} {{ game }}#}
-{#                </td>#}
-{#            </tr>#}
-{#        {% endfor %}#}
-{#        </tbody>#}
-{#    </table>#}
-    <body>
     {{ table2 | safe }}
     {% for key, value in df %} <tr> <td> Key: {{ key }} </td> <td> Value: {{ value }} </td> </tr> {% endfor %}
     {%   render_table table %}

@@ -11,6 +11,7 @@ from Leagues.models import League, Team, Division, Field, Game, Slot
 from Leagues.gameGenerator import generateGames, updateGameScores, scheduleGames, removeSchedule, displayStats, importData
 from .tables import GamesTable, SlotsTable
 import pandas as pd
+from django.db.models import Q
 import numpy as np
 from Leagues.tools import convertDatetimeToString
 
@@ -52,15 +53,16 @@ def leagues(request, pk):
 def teams(request, pk):
     team = get_object_or_404(Team, pk=pk)
     games = Game.objects.all().filter(team1=team) | Game.objects.all().filter(team2=team)
-    slots = Slot.objects.all()
+    fields = Field.objects.all().filter(league=team.league)
+    slots = Slot.objects.all().order_by('time') #TODO: get slots only of compatible fields
+
     game_names = []
-    slot_name = ['slot']
+    slot_names = []
+    field_names = []
+
     for game in games:
         game_names.append(game.shortstr())
-    matrix = []
 
-    df = pd.DataFrame(matrix, columns=['slot'], index=game_names)
-    # df.columns = ['Game','slot']
     data = []
 
     for game in games:
@@ -69,11 +71,26 @@ def teams(request, pk):
         except Slot.DoesNotExist:
             data.append([game.shortstr(), 'NOT SCHEDULED'])
 
-    df = pd.DataFrame(data, columns=['Game', 'Slot'])
+    table = SlotsTable(Slot.objects.all().filter(Q(game__team1=team) | Q(game__team2=team)))
+    RequestConfig(request).configure(table)
 
-    table = df
+    # CREATES SLOT TABLE WITH ONLY GAMES FOR THIS TEAM
+    for slot in slots:
+        if slot.time.strftime("%Y-%m-%d %H:%M") not in slot_names:
+            slot_names.append(slot.time.strftime("%Y-%m-%d %H:%M"))
+    for field in fields:
+        field_names.append(field.name)
+    matrix = []
+    df = pd.DataFrame(matrix, columns=field_names, index=slot_names)
 
-    return render(request, 'teams.html', {'team': team, 'games': games, 'slots': df.to_html})
+    for slot in slots:
+        if not slot.game == None:
+            if ((slot.game.team1 == team) | (slot.game.team2 == team)):
+                df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = slot.game.shortstr()
+            # else:
+            #     df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = ""
+
+    return render(request, 'teams.html', {'team': team, 'games': games, 'slots': df.to_html, 'table': table, 'table2': df.to_html(justify='center')})
 
 
 def fields(request, pk):

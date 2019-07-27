@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
 
 {% block title %}
     {{ board.name }} - {{ block.super }}
@@ -37,7 +39,22 @@
         {#        {% endfor %}#}
         </tbody>
     </table>
-        {{ slots     | safe}}
+
+    <table class="table">
+        <thead class="thead-inverse">
+        {% render_table table %}
+    </table>
+
+    <table>
+        <thead class="thead-inverse">
+        {{ table2 | safe }}
+        {% for key, value in df %}
+            <tr>
+                <td> Key: {{ key }} </td>
+                <td> Value: {{ value }} </td>
+            </tr> {% endfor %}
+        {#    {{ slots     | safe }}#}
+    </table>
     <table class="table">
         <thead class="thead-inverse">
         <tr>
@@ -57,4 +74,7 @@
         {% endfor %}
         </tbody>
     </table>
+
+
+
 {% endblock %}
