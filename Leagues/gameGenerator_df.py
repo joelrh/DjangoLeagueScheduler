@@ -2,9 +2,20 @@ from .models import League, Game, Field, Division, Team, Slot
 import time
 from django.db.models import Q
 import pandas as pd
+import tablib
 from django.db import connection
+from import_export import resources
 import numpy as np
 
+# def importData():
+#     my_dataset = tablib.Dataset(headers=['id', 'name','description','league','division'])
+#     my_dataset.xlsx = open('data\Team-2019-07-26.xlsx', 'rb').read()
+#     print(my_dataset)
+#     team_resource = resources.modelresource_factory(model=Team)()
+#     # dataset = tablib.Dataset(headers=['id', 'name','description','league','division'])
+#     result = team_resource.import_data(my_dataset, dry_run=True)
+#     print(result.has_errors())
+#     result = team_resource.import_data(my_dataset, dry_run=False)
 
 class gameGenerator_df():
     def __init__(self):

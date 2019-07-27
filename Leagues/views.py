@@ -8,7 +8,7 @@ from tablib import Dataset
 from .forms import NewLeagueForm, NewTeamForm, NewFieldForm, NewDivisionForm, NewSlotForm
 from django.http import HttpResponse
 from Leagues.models import League, Team, Division, Field, Game, Slot
-from Leagues.gameGenerator import generateGames, updateGameScores, scheduleGames, removeSchedule, displayStats
+from Leagues.gameGenerator import generateGames, updateGameScores, scheduleGames, removeSchedule, displayStats, importData
 from .tables import GamesTable, SlotsTable
 import pandas as pd
 import numpy as np
@@ -26,34 +26,22 @@ def home(request):
 
 def gen_games(request):
     generateGames()
-    updateGameScores()
-    games = Game.objects.all()
-    for game in games:
-        print(game)
-    df, numGamesUnscheduled, numSlotsUnscheduled, totalScore = displayStats()
-    return render(request, 'home.html', {'df': df.to_html(justify='center'),
-                                         'numGamesUnscheduled': numGamesUnscheduled,
-                                         'numSlotsUnscheduled': numSlotsUnscheduled,
-                                         'totalScore': totalScore})
+    # updateGameScores()
+    return home(request)
+
+def import_all(request):
+    importData()
+    return home(request)
 
 
 def schedule_games(request):
     scheduleGames()
-    df, numGamesUnscheduled, numSlotsUnscheduled, totalScore = displayStats()
-    return render(request, 'home.html', {'df': df.to_html(justify='center'),
-                                         'numGamesUnscheduled': numGamesUnscheduled,
-                                         'numSlotsUnscheduled': numSlotsUnscheduled,
-                                         'totalScore': totalScore})
+    return home(request)
 
 
 def reset_games(request):
     removeSchedule()
-    df, numGamesUnscheduled, numSlotsUnscheduled, totalScore = displayStats()
-    return render(request, 'home.html', {'df': df.to_html(justify='center'),
-                                         'numGamesUnscheduled': numGamesUnscheduled,
-                                         'numSlotsUnscheduled': numSlotsUnscheduled,
-                                         'totalScore': totalScore})
-
+    return home(request)
 
 def leagues(request, pk):
     league = get_object_or_404(League, pk=pk)

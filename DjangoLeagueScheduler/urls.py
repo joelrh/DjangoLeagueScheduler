@@ -40,6 +40,7 @@ urlpatterns = [
     url(r'^reset_games', views.reset_games, name='reset_games'),
     url(r'^gen_games', views.gen_games, name='gen_games'),
     url(r'^stats', views.stats, name='stats'),
+    url(r'^import_all', views.import_all, name='import_all'),
 
     # url(r'^new_division$', views.new_division, name='new_division'),
     # url(r'^leagues/(?P<pk>\d+)/new/$', views.new_league, name='new_league'),

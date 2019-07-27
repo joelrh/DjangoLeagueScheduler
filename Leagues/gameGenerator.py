@@ -4,6 +4,58 @@ from django.db.models import Q
 import pandas as pd
 from django.db import connection
 from Leagues.gameGenerator_df import *
+import tablib
+from import_export import resources
+from Leagues.admin import TeamResource
+
+
+def importData():
+    # ORDER MATTERS HERE
+
+    # IMPORT LEAGUES
+    League.objects.all().delete()
+    my_dataset = tablib.Dataset(headers=['id', 'name', 'abbreviation', 'description'])
+    my_dataset.xlsx = open('data\League-2019-07-26.xlsx', 'rb').read()
+    print(my_dataset)
+    division_resource = resources.modelresource_factory(model=League)()
+    division_resource.import_data(my_dataset, dry_run=False)
+
+    # IMPORT DIVISIONS
+    Division.objects.all().delete()
+    my_dataset = tablib.Dataset(headers=['id', 'name', 'abbreviation', 'description','league'])
+    my_dataset.xlsx = open('data\Division-2019-07-26.xlsx', 'rb').read()
+    print(my_dataset)
+    division_resource = resources.modelresource_factory(model=Division)()
+    division_resource.import_data(my_dataset, dry_run=False)
+
+    # IMPORT TEAMS
+    Team.objects.all().delete()
+    my_dataset = tablib.Dataset(headers=['id', 'name','description','league','division'])
+    my_dataset.xlsx = open('data\Team-2019-07-26.xlsx', 'rb').read()
+    print(my_dataset)
+    team_resource = resources.modelresource_factory(model=Team)()
+    team_resource.import_data(my_dataset, dry_run=False)
+
+    # IMPORT FIELDS
+    Field.objects.all().delete()
+    my_dataset = tablib.Dataset(headers=['id', 'name','description','league'])
+    my_dataset.xlsx = open('data\Field-2019-07-26.xlsx', 'rb').read()
+    print(my_dataset)
+    field_resource = resources.modelresource_factory(model=Field)()
+    field_resource.import_data(my_dataset, dry_run=False)
+
+    # IMPORT SLOTS
+    Slot.objects.all().delete()
+    my_dataset = tablib.Dataset(headers=['id', 'field', 'game', 'time'])
+    my_dataset.xlsx = open('data\Slot-2019-07-26.xlsx', 'rb').read()
+    print(my_dataset)
+    slot_resource = resources.modelresource_factory(model=Slot)()
+    slot_resource.import_data(my_dataset, dry_run=False)
+
+    generateGames()
+
+
+
 
 
 def generateGames():
@@ -79,7 +131,7 @@ def removeSchedule():
     #     print('UNSCHEDULING' + game.__str__())
     #     game.isScheduled = False
     #     game.save()
-    slots = Slot.objects.all()
+    slots = Slot.objects.all().filter(~Q(game = None))
     for slot in slots:
         print('UNSCHEDULING' + slot.__str__())
         slot.game = None
