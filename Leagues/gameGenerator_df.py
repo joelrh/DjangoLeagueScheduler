@@ -165,8 +165,8 @@ class gameGenerator_df():
             print('SLOT: ')
             print(Slot.objects.all().filter(pk=slotIndex)[0])
             self.slots.at[slotIndex, 'game_id'] = game.id
-            #self.updateGameScores_df()
-            self.updateGameScores_df(game)
+            self.updateGameScores_df()
+            #self.updateGameScores_df(game)
             return True
         else:
             print('GAME NOT COMPATIBLE: ' + str(game.id))
