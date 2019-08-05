@@ -7,6 +7,7 @@ from django.db import connection
 from import_export import resources
 import numpy as np
 
+
 # def importData():
 #     my_dataset = tablib.Dataset(headers=['id', 'name','description','league','division'])
 #     my_dataset.xlsx = open('data\Team-2019-07-26.xlsx', 'rb').read()
@@ -48,7 +49,7 @@ class gameGenerator_df():
 
         while len(self.games[~self.games['id'].isin(self.slots.query('not game_id.isnull()')['game_id'])]) > 0 and \
                 len(self.slots.query('game_id.isnull()')) > 0 and \
-                numberRetried < 10:
+                numberRetried < 1:
             numberRetried = numberRetried + 1
             slots = self.slots.query('game_id.isnull()')
             # shuffledSlots = slots.sample(frac=1)
@@ -131,14 +132,16 @@ class gameGenerator_df():
             gameswithteams['id'].isin(scheduledSlots['game_id'])]  ##TODO: I think this is wrong
         scheduledGamesWithTeams = scheduledSlots[scheduledSlots['game_id'].isin(gameswithteams['id'])]
         # if len(scheduledGamesWithTeams[scheduledGamesWithTeams.time == slot.time]) > 0:
-        if len(scheduledGamesWithTeams[pd.to_datetime(scheduledGamesWithTeams.time).dt.day == pd.to_datetime(slot.time).day]) > self.maxGamesPerDay:
+        if len(scheduledGamesWithTeams[pd.to_datetime(scheduledGamesWithTeams.time).dt.day == pd.to_datetime(
+                slot.time).day]) > self.maxGamesPerDay:
             Compatible = False
             print('A TEAM ALREADY HAS A GAME SCHEDULED FOR THAT DAY')
         if Compatible: print('NO GAMES ALREADY SCHEDULED ON THIS DAY WITH TEAMS')
 
         ## ENSURE NOT TOO MANY LATE GAMES
         if len(scheduledGamesWithTeams[
-                   pd.to_datetime(scheduledGamesWithTeams.time).dt.hour > self.lateTimeThreshold]) > self.maxLateGames * 2:
+                   pd.to_datetime(
+                       scheduledGamesWithTeams.time).dt.hour > self.lateTimeThreshold]) > self.maxLateGames * 2:
             print('Cumulative limit: ' + str(self.maxLateGames * 2))
             print('Num scheduled for teams: ' + str(len(scheduledGamesWithTeams[
                                                             pd.to_datetime(
@@ -162,14 +165,15 @@ class gameGenerator_df():
             print('SLOT: ')
             print(Slot.objects.all().filter(pk=slotIndex)[0])
             self.slots.at[slotIndex, 'game_id'] = game.id
-            self.updateGameScores_df()
+            #self.updateGameScores_df()
+            self.updateGameScores_df(game)
             return True
         else:
             print('GAME NOT COMPATIBLE: ' + str(game.id))
             print(Game.objects.all().filter(pk=game.id)[0])
         return False
 
-    def updateGameScores_df(self):
+    def updateGameScores_df(self, game=[]):
 
         # generateGames()
         print('UPDATING SCORES')
@@ -178,12 +182,21 @@ class gameGenerator_df():
         unscheduledGames = self.games[~self.games['id'].isin(self.slots.query('not game_id.isnull()')['game_id'])]
         scheduledGames = self.slots.query('not game_id.isnull()')
 
-        for gameIndex, game in unscheduledGames.iterrows():
+        if len(game) > 0:
+            print("hello")
             gamesWithTeams = pd.concat([self.games[self.games.team1_id == game.team1_id],
                                         self.games[self.games.team1_id == game.team2_id],
                                         self.games[self.games.team2_id == game.team1_id],
                                         self.games[self.games.team2_id == game.team2_id]])
-            self.updateGameScore_df(gameIndex, game, unscheduledGames, scheduledGames, gamesWithTeams)
+            game_index = self.games.index[self.games['id'] == game.id]
+            self.updateGameScore_df(game_index, game, unscheduledGames, scheduledGames, gamesWithTeams)
+        else:
+            for gameIndex, game in unscheduledGames.iterrows():
+                gamesWithTeams = pd.concat([self.games[self.games.team1_id == game.team1_id],
+                                            self.games[self.games.team1_id == game.team2_id],
+                                            self.games[self.games.team2_id == game.team1_id],
+                                            self.games[self.games.team2_id == game.team2_id]])
+                self.updateGameScore_df(gameIndex, game, unscheduledGames, scheduledGames, gamesWithTeams)
 
         elapsed_time = time.time() - t
         print('ELAPSED TIME:' + str(elapsed_time))

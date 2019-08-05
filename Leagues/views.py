@@ -17,6 +17,47 @@ from Leagues.tools import convertDatetimeToString
 
 
 # Create your views here.
+def index1(request):
+    fields = Field.objects.all()
+    slots = Slot.objects.all()
+    slot_names = []
+    field_names = []
+    for slot in slots:
+
+        if slot.time.strftime("%Y-%m-%d %H:%M") not in slot_names:
+            slot_names.append(slot.time.strftime("%Y-%m-%d %H:%M"))
+    for field in fields:
+        field_names.append(field.name)
+    matrix = []
+    df = pd.DataFrame(matrix, columns=field_names, index=slot_names)
+
+    for slot in slots:
+        df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = True
+
+    table = df
+
+    table = SlotsTable(Slot.objects.all())
+    RequestConfig(request).configure(table)
+    fields = Field.objects.all()
+    slots = Slot.objects.all()
+    slot_names = []
+    field_names = []
+    for slot in slots:
+
+        if slot.time.strftime("%Y-%m-%d %H:%M") not in slot_names:
+            slot_names.append(slot.time.strftime("%Y-%m-%d %H:%M"))
+    for field in fields:
+        field_names.append(field.name)
+    matrix = []
+    df = pd.DataFrame(matrix, columns=field_names, index=slot_names)
+
+    for slot in slots:
+        if not slot.game == None:
+            df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = slot.game.shortstr()
+
+    # return render(request, 'allfields.html', {'fields': fields, 'slots': slots, 'table': df.to_html(justify='center')})
+    return render(request,'index2.html',{'fields': fields, 'table':df})
+
 def home(request):
     df, numGamesUnscheduled, numSlotsUnscheduled, totalScore = displayStats()
     return render(request, 'home.html', {'df': df.to_html(justify='center'),
