@@ -7,7 +7,8 @@
 {% endblock %}
 
 {% block breadcrumb %}
-    <li class="breadcrumb-item"><a href="{% url 'allfields' %}">Fields</a></li>
+    <li class="breadcrumb-item" xmlns:line-height="http://www.w3.org/1999/xhtml"
+        xmlns:line-height="http://www.w3.org/1999/xhtml"><a href="{% url 'allfields' %}">Fields</a></li>
     {#  <li class="breadcrumb-item active">{{ field.name }}</li>#}
 {% endblock %}
 
@@ -19,7 +20,7 @@
         <meta name="viewport" content="width=device-width, user-scalable=no"/>
         <!-- "position: fixed" fix for Android 2.2+ -->
         <link rel="stylesheet" href="../static/css/style2.css" type="text/css" media="screen"/>
-{#        <script type="text/javascript" src="../static/js/header.js"></script>#}
+        {#        <script type="text/javascript" src="../static/js/header.js"></script>#}
         <script type="text/javascript" src="../static/js/redips-drag-min.js"></script>
         <script type="text/javascript" src="../static/js/script2.js"></script>
         {#        <title>Example 7: E F</title>#}
@@ -79,8 +80,13 @@
                                         </td>
                                     {% else %}
                                         <td>
-                                            <div id="e" class="redips-drag orange"><font
-                                                    size="1">{{ r|wordwrap:10 }}</font></div>
+                                            <div id="e" class="redips-drag orange">
+                                                <font size="1">
+                                                    <p>{{ r|slice:10 }}
+{#                                                        <br>{{ r|slice:10 }}#}
+                                                    </p>
+                                                </font>
+                                            </div>
                                         </td>
                                     {% endif %}
                                 {% endif %}
