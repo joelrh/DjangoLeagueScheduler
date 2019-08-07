@@ -35,7 +35,7 @@ class gameGenerator_df():
         self.maxGamesPerDay = 1
         self.maxLateGames = 1
         self.lateTimeThreshold = 18
-        self.DEBUG = False
+        self.DEBUG = True
         self.daysBetween = 3
 
     def scheduleGames_df(self):
@@ -49,17 +49,31 @@ class gameGenerator_df():
         # lateCap = 2
 
         # unscheduledGames = self.games[~self.games['id'].isin(self.slots.query('not game_id.isnull()')['game_id'])]
-
+        numGamesUnscheduled = 0
+        SCHEDULINGCOMPLETE = False
         while len(self.games[~self.games['id'].isin(self.slots.query('not game_id.isnull()')['game_id'])]) > 0 and \
                 len(self.slots.query('game_id.isnull()')) > 0 and \
-                numberRetried < 10:
+                numberRetried < 10 and \
+                not SCHEDULINGCOMPLETE:
 
             numberRetried = numberRetried + 1
+            if numberRetried > 1:
+                self.maxLateGames = min(self.maxLateGames + 1,5)
+                self.daysBetween = max(self.daysBetween - 1,1)
+                # self.transferScheduleFromDfToObject()
             print('-----------------------------------------------------------------------------------')
             print('-----------------------------------------------------------------------------------')
-            print('NUMBER OF LOOPS: ' + str(numberRetried))
+            print('                LOOP #: ' + str(numberRetried))
+            print('        Max Late Games: ' + str(self.maxLateGames))
+            print('Min Days Between Games: ' + str(self.daysBetween))
             print('-----------------------------------------------------------------------------------')
             print('-----------------------------------------------------------------------------------')
+
+            # if numGamesUnscheduled == len(self.games) - len(self.slots.query('not game_id.isnull()')):
+            #     print('SCHEDULING COMPLETE')
+            #     SCHEDULINGCOMPLETE=True
+            # numGamesUnscheduled = len(self.games) - len(self.slots.query('not game_id.isnull()'))
+
             slots = self.slots.query('game_id.isnull()')
             # shuffledSlots = slots.sample(frac=1)
             # slots2=slots
@@ -74,11 +88,9 @@ class gameGenerator_df():
             # TODO: If the scores are updated based on the slot, I can implement a # days between games optimization
             # TODO: Need to find the optimal score based on num slots available for each league - something nice to compare optimization
 
-            if numberRetried > 1:
-                self.lateTimeThreshold = min(self.lateTimeThreshold + 1,4)
-                self.daysBetween = max(self.daysBetween - 1,1)
 
-            if self.DEBUG: print('LATE CAP: ', str(self.lateTimeThreshold))
+
+            # if self.DEBUG: print('LATE CAP: ', str(self.lateTimeThreshold))
 
             # Iterate through every slot and try to schedule the most deserving, compatible game
             for slotIndex, slot in slots.iterrows():
@@ -113,14 +125,10 @@ class gameGenerator_df():
                     scheduledSlots = self.slots.query('not game_id.isnull()')
                     slotsWithinTimeBubble = scheduledSlots[(scheduledSlots['time'] < slot.time + timedelta(days=self.daysBetween)) & (
                             scheduledSlots['time'] > slot.time - timedelta(days=self.daysBetween))]
-                    if len(slotsWithinTimeBubble) > 20:
-                        if self.DEBUG: print('')
                     gamesWithinTimeBubble_REMOVE = self.games[
                         self.games['id'].isin(slotsWithinTimeBubble['game_id'])]
                     gamesWithinTimeBubble = self.games[
                         self.games['id'].isin(slotsWithinTimeBubble['game_id'])]
-                    if len(gamesWithinTimeBubble) > 1:
-                        if self.DEBUG: print('')
                     teamsWithGamesInTimeBubble = pd.concat(
                         [gamesWithinTimeBubble.team1_id, gamesWithinTimeBubble.team2_id])
                     gamesWithTeamsWithGamesOutsideTimeBubble = unscheduledGamesInLeague[
@@ -376,7 +384,7 @@ class gameGenerator_df():
         self.games.ix[gameIndex, 'score'] = score
 
     def transferScheduleFromDfToObject(self):
-        if self.DEBUG: print('')
+        if self.DEBUG: print('POPULATING GAMES')
 
         scheduledGames = self.slots.query('not game_id.isnull()')
         for index, slot in scheduledGames.iterrows():
