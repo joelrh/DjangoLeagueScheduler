@@ -5,10 +5,10 @@ from django_tables2 import RequestConfig
 from django.http import Http404
 from Leagues.admin import TeamResource
 from tablib import Dataset
-from .forms import NewLeagueForm, NewTeamForm, NewFieldForm, NewDivisionForm, NewSlotForm
+from .forms import NewLeagueForm, NewTeamForm, NewFieldForm, NewDivisionForm, NewSlotForm, SettingsForm
 from django.http import HttpResponse
-from Leagues.models import League, Team, Division, Field, Game, Slot
-from Leagues.gameGenerator import generateGames, updateGameScores, scheduleGames, removeSchedule, displayStats, importData
+from Leagues.models import League, Team, Division, Field, Game, Slot, SiteConfiguration
+from Leagues.gameGenerator import generateGames, scheduleGames, removeSchedule, displayStats, importData
 from .tables import GamesTable, SlotsTable
 import pandas as pd
 from django.db.models import Q
@@ -56,20 +56,42 @@ def index1(request):
             df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = slot.game.shortstr()
 
     # return render(request, 'allfields.html', {'fields': fields, 'slots': slots, 'table': df.to_html(justify='center')})
-    return render(request,'index2.html',{'fields': fields, 'table':df})
+    return render(request, 'index2.html', {'fields': fields, 'table': df})
+
 
 def home(request):
+    config = get_object_or_404(SiteConfiguration, pk=1)
+    # teams = Team.objects.all().filter(league=league)
+
+    # instance = get_object_or_404(MyModel, id=id)
+    form = SettingsForm(request.POST or None, instance=config)
+    if form.is_valid():
+        form.save()
+        return redirect('home')
+
+    # config = SiteConfiguration.objects.all().first()
+    # # get_object_or_404(League, pk=pk)
+    # if request.method == 'POST':
+    #     form = SettingsForm(request.POST or None, instance=config)
+    #     if form.is_valid():
+    #         config = form.save()
+    #         return redirect('home')  # , pk=league.pk)  # TODO: redirect to the created topic page
+    # else:
+    #     form = SettingsForm()
+    # return render(request, 'settings.html', {'config': config, 'form': form}
     df, numGamesUnscheduled, numSlotsUnscheduled, totalScore = displayStats()
     return render(request, 'home.html', {'df': df.to_html(justify='center'),
                                          'numGamesUnscheduled': numGamesUnscheduled,
                                          'numSlotsUnscheduled': numSlotsUnscheduled,
-                                         'totalScore': totalScore})
+                                         'totalScore': totalScore,
+                                         'config': config, 'form': form})
 
 
 def gen_games(request):
     generateGames()
     # updateGameScores()
     return home(request)
+
 
 def import_all(request):
     importData()
@@ -85,17 +107,25 @@ def reset_games(request):
     removeSchedule()
     return home(request)
 
+
 def leagues(request, pk):
     league = get_object_or_404(League, pk=pk)
     teams = Team.objects.all().filter(league=league)
-    return render(request, 'leagues.html', {'league': league, 'teams': teams})
+
+    # instance = get_object_or_404(MyModel, id=id)
+    form = NewLeagueForm(request.POST or None, instance=league)
+    if form.is_valid():
+        form.save()
+        return redirect('allleagues')
+
+    return render(request, 'leagues.html', {'league': league, 'teams': teams, 'form': form})
 
 
 def teams(request, pk):
     team = get_object_or_404(Team, pk=pk)
     games = Game.objects.all().filter(team1=team) | Game.objects.all().filter(team2=team)
     fields = Field.objects.all().filter(league=team.league)
-    slots = Slot.objects.all().order_by('time') #TODO: get slots only of compatible fields
+    slots = Slot.objects.all().order_by('time')  # TODO: get slots only of compatible fields
 
     game_names = []
     slot_names = []
@@ -131,7 +161,8 @@ def teams(request, pk):
             # else:
             #     df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = ""
 
-    return render(request, 'teams.html', {'team': team, 'games': games, 'slots': df.to_html, 'table': table, 'table2': df.to_html(justify='center')})
+    return render(request, 'teams.html', {'team': team, 'games': games, 'slots': df.to_html, 'table': table,
+                                          'table2': df.to_html(justify='center')})
 
 
 def fields(request, pk):
@@ -217,6 +248,18 @@ def stats(request):
                                           'numGamesUnscheduled': numGamesUnscheduled,
                                           'numSlotsUnscheduled': numSlotsUnscheduled,
                                           'totalScore': totalScore})
+
+
+def settings(request):  # , pk):
+    config = SiteConfiguration()
+    if request.method == 'POST':
+        form = SettingsForm(request.POST)
+        if form.is_valid():
+            config = form.save()
+            return redirect('allteams')  # , pk=league.pk)  # TODO: redirect to the created topic page
+    else:
+        form = SettingsForm()
+    return render(request, 'settings.html', {'config': config, 'form': form})
 
 
 def simple_upload(request):

@@ -42,6 +42,7 @@ urlpatterns = [
     url(r'^stats', views.stats, name='stats'),
     url(r'^import_all', views.import_all, name='import_all'),
     url(r'^index1', views.index1, name='index1'),
+    url(r'^settings$', views.settings, name='settings'),
 
     # url(r'^new_division$', views.new_division, name='new_division'),
     # url(r'^leagues/(?P<pk>\d+)/new/$', views.new_league, name='new_league'),

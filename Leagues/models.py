@@ -38,7 +38,7 @@ from solo.models import SingletonModel
 class SiteConfiguration(models.Model):
     maxLateGames = models.IntegerField(null=True)
     enforceLateGameCap = models.BooleanField(default=False)
-    maxGamesPerWeek = models.IntegerField(null=True)
+    daysBetweenGames = models.IntegerField(null=True)
 
     @classmethod
     def object(cls):
@@ -50,9 +50,10 @@ class SiteConfiguration(models.Model):
 
 class League(models.Model):
     name = models.CharField(max_length=20, null=False)
-    abbreviation = models.CharField(max_length=2, null=False)
+    abbreviation = models.CharField(max_length=3, null=False)
     description = models.TextField(blank=True, null=True)
-    # TODO: need to add maxGames to this to prevent excessive number of games
+    maxLateGames = models.IntegerField(null=True)
+    maxGames = models.IntegerField(null=True)
     def __str__(self):
         return self.name
 

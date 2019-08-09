@@ -8,12 +8,12 @@ from django_range_slider.fields import RangeSliderField, RangeSlider
 class NewLeagueForm(forms.ModelForm):
     class Meta:
         model = League
-        fields = ['name', 'description']
+        fields = ['name', 'abbreviation','description','maxLateGames','maxGames']
 
-class SiteConfiguration(forms.ModelForm):
+class SettingsForm(forms.ModelForm):
     class Meta:
         model = SiteConfiguration
-        fields = ['maxLateGames', 'enforceLateGameCap','maxGamesPerWeek']
+        fields = ['maxLateGames', 'enforceLateGameCap','daysBetweenGames']
 
 
 class RangeSliderField(forms.CharField):
