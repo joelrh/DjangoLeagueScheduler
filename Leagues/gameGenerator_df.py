@@ -67,10 +67,19 @@ class gameGenerator_df():
             # numGamesUnscheduled = len(self.games) - len(self.slots.query('not game_id.isnull()'))
 
             slots = self.slots.query('game_id.isnull()')
-            slots['timeofday'] = slots['time'].dt.time
-            # filter by times between 9 and 10 and sort by timestamp
-            slots = slots.sort_values('time')
-            slots = slots.sort_values('timeofday')
+            # slots['timeofday'] = slots['time'].dt.time
+            # # filter by times between 9 and 10 and sort by timestamp
+            # slots = slots.sort_values('time')
+            # slots = slots.sort_values('timeofday')
+
+            # Saturday games between 12pm and 8pm for start times
+            # Sunday games between 12pm and 6pm for start times
+            # Weekday games at 6pm
+            # Friday games at 8pm
+            # Saturday games at 10am
+            # Sunday and weekend games at 8pm
+
+
 
             RANDOMIZESLOTS = False
             if RANDOMIZESLOTS:
@@ -98,6 +107,12 @@ class gameGenerator_df():
 
                 # removes games not compatible with the field
                 unscheduledGamesInLeague = unscheduledGames[unscheduledGames['league_id'].isin(leagues_str)]
+
+                # removes games that can't be scheduled due to MAX games
+                unscheduledGamesInLeague=unscheduledGamesInLeague.loc[(unscheduledGamesInLeague['score'] != 9999999)]
+
+                # quits loop if there are no games to try scheduling
+                # if len(unscheduledGamesInLeague)==0:break
 
                 # randomize the list of games, sorts them by score
                 # unscheduledGamesInLeague = unscheduledGamesInLeague.sample(frac=1)
@@ -274,17 +289,17 @@ class gameGenerator_df():
                 if self.DEBUG: print('NO GAMES SCHEDULED FOR TEAMS WITHIN 2 DAYS')
 
         ## ENSURE UNDER MAX GAME CAP
-        CHECKMAXGAME = False
+        CHECKMAXGAME = True
         if CHECKMAXGAME:
             if League.objects.get(id=game.league_id).maxLateGames is not None:
 
-                if len(scheduledGamesWithTeam1) >= League.objects.get(id=game.league_id).maxLateGames:
+                if len(scheduledGamesWithTeam1) >= League.objects.get(id=game.league_id).maxGames:
                     Compatible = False
                     self.games.ix[gameIndex, 'score'] = 9999999
                     if self.DEBUG: print('TOO MANY GAMES ALREADY SCHEDULED FOR TEAM 1')
                     return False
 
-                if len(scheduledGamesWithTeam2) >= League.objects.get(id=game.league_id).maxLateGames:
+                if len(scheduledGamesWithTeam2) >= League.objects.get(id=game.league_id).maxGames:
                     Compatible = False
                     self.games.ix[gameIndex, 'score'] = 9999999
                     if self.DEBUG: print('TOO MANY GAMES ALREADY SCHEDULED FOR TEAM 2')

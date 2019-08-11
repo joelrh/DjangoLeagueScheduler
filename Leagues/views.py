@@ -223,7 +223,7 @@ def allslots(request):
     table = SlotsTable(Slot.objects.all())
     RequestConfig(request).configure(table)
     fields = Field.objects.all()
-    slots = Slot.objects.all()
+    slots = Slot.objects.all().order_by('time')
     slot_names = []
     field_names = []
     for slot in slots:
