@@ -20,6 +20,8 @@
 {#            TODO: add all attributes for better reference#}
             <th>League</th>
             <th>Description</th>
+            <th>Maximum Late Games</th>
+            <th>Maximum Number of Total Games</th>
         </tr>
         </thead>
         <tbody>
@@ -27,9 +29,12 @@
             <tr>
                 <td>
                     <a href="{% url 'leagues' league.pk %}">{{ league.name }}</a>
-                    <small class="text-muted d-block">{{ league.description }}</small>
+{#                    <small class="text-muted d-block">{{ league.description }}</small>#}
                 </td>
                 <td class="align-middle">{{ league.description }}</td>
+                <td class="align-middle">{{ league.maxLateGames }}</td>
+                <td class="align-middle">{{ league.maxGames }}</td>
+
             </tr>
         {% endfor %}
         </tbody>

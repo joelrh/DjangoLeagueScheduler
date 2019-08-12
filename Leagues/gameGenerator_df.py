@@ -55,7 +55,6 @@ class gameGenerator_df():
             print('-----------------------------------------------------------------------------------')
             print('-----------------------------------------------------------------------------------')
             print('                LOOP #: ' + str(numberRetried))
-            print('        Max Late Games: ' + str(self.maxLateGames))
             print('   Late Game Threshold: ' + str(self.lateTimeThreshold))
             print('Min Days Between Games: ' + str(self.daysBetween))
             print('-----------------------------------------------------------------------------------')
@@ -67,26 +66,16 @@ class gameGenerator_df():
             # numGamesUnscheduled = len(self.games) - len(self.slots.query('not game_id.isnull()'))
 
             slots = self.slots.query('game_id.isnull()')
+
             # slots['timeofday'] = slots['time'].dt.time
             # # filter by times between 9 and 10 and sort by timestamp
             # slots = slots.sort_values('time')
             # slots = slots.sort_values('timeofday')
 
-            # Saturday games between 12pm and 8pm for start times
-            # Sunday games between 12pm and 6pm for start times
-            # Weekday games at 6pm
-            # Friday games at 8pm
-            # Saturday games at 10am
-            # Sunday and weekend games at 8pm
-
-
-
             RANDOMIZESLOTS = False
             if RANDOMIZESLOTS:
                 slots = slots.sample(frac=1)
 
-            # TODO: Need to update scores based on the slot that is being scheduled
-            # TODO: If the scores are updated based on the slot, I can implement a # days between games optimization
             # TODO: Need to find the optimal score based on num slots available for each league - something nice to compare optimization
 
             # Iterate through every slot and try to schedule the most deserving, compatible game
@@ -108,8 +97,8 @@ class gameGenerator_df():
                 # removes games not compatible with the field
                 unscheduledGamesInLeague = unscheduledGames[unscheduledGames['league_id'].isin(leagues_str)]
 
-                # removes games that can't be scheduled due to MAX games
-                unscheduledGamesInLeague=unscheduledGamesInLeague.loc[(unscheduledGamesInLeague['score'] != 9999999)]
+                # removes games that can't be scheduled due to MAX games or MAX late games
+                unscheduledGamesInLeague = unscheduledGamesInLeague.loc[(unscheduledGamesInLeague['score'] != 9999999)]
 
                 # quits loop if there are no games to try scheduling
                 # if len(unscheduledGamesInLeague)==0:break
@@ -144,47 +133,6 @@ class gameGenerator_df():
                 # randomize list of games and sort by score
                 unscheduledGamesInLeague = gamesWithTeamsWithGamesOutsideTimeBubble.sample(frac=1)
                 unscheduledGamesSortedByLowestScore = unscheduledGamesInLeague.sort_values('score')
-
-                # TODO: remove games with teams that have max number of games already scheduled
-
-                # unscheduledGamesInLeague
-                # currentLeague
-                # leageMaxGames =
-                # teamsWithUnscheduledGames = pd.concat(
-                #     [unscheduledGamesInLeague.team1_id, unscheduledGamesInLeague.team2_id])
-                # GamesWithTeamsWithNumUnscheduledGamesUnderMax = unscheduledGamesInLeague[
-                #     (~unscheduledGamesInLeague['team1_id'].isin(teamsWithGamesInTimeBubble)) & (
-                #         ~unscheduledGamesInLeague['team2_id'].isin(teamsWithGamesInTimeBubble))]
-
-                # if the slot is late, remove games with teams that already have late games
-                # scheduledSlots = self.slots.query('not game_id.isnull()')
-                # Get all slots with late games
-                # slotsWithLateGames = scheduledSlots[pd.to_datetime(
-                #         scheduledSlots.time).dt.hour > self.lateTimeThreshold]
-                # # Get all games from slots with late games
-                # gamesWithLateTimes = self.games[
-                #     self.games['id'].isin(slotsWithLateGames['game_id'])]
-                # # Get all teams from late games
-                # teamsWithLateGames = pd.concat(
-                #     [gamesWithLateTimes.team1_id, gamesWithLateTimes.team2_id])
-                # teamsWithMaxLageGames =
-                # gamesWithTeamsUnderMaxLateGames =
-                # # gat all uscheduled games minus the teams with games in time bubble
-                # gamesWithTeamsWithGamesOutsideTimeBubble = unscheduledGamesInLeague[
-                #     (~unscheduledGamesInLeague['team1_id'].isin(teamsWithGamesInTimeBubble)) & (
-                #         ~unscheduledGamesInLeague['team2_id'].isin(teamsWithGamesInTimeBubble))]
-                # teamsWithMaxLateGames =
-                # gamesWithTeam1 = pd.concat([self.games[self.games.team1_id == game.team1_id],
-                #                             self.games[self.games.team2_id == game.team1_id]])
-                # scheduledGamesWithTeam1 = scheduledSlots[scheduledSlots['game_id'].isin(gamesWithTeam1['id'])]
-                # if len(scheduledGamesWithTeam1[pd.to_datetime(
-                #         scheduledGamesWithTeam1.time).dt.hour > self.lateTimeThreshold]) > self.maxLateGames:
-                #     if self.DEBUG: print('Num scheduled for teams: ' + str(len(scheduledGamesWithTeam1[
-                #                                                                    pd.to_datetime(
-                #                                                                        scheduledGamesWithTeam1.time).dt.hour > 18])))
-                #     Compatible = False
-                #     if self.DEBUG: print('TOO MANY LATE GAMES ALREADY SCHEDULED')
-                #     return False
 
                 for gameIndex, game in unscheduledGamesSortedByLowestScore.iterrows():
                     # ensure that the game is not already scheduled - this shouldn't happen but it is good to check
@@ -291,7 +239,7 @@ class gameGenerator_df():
         ## ENSURE UNDER MAX GAME CAP
         CHECKMAXGAME = True
         if CHECKMAXGAME:
-            if League.objects.get(id=game.league_id).maxLateGames is not None:
+            if League.objects.get(id=game.league_id).maxGames is not None:
 
                 if len(scheduledGamesWithTeam1) >= League.objects.get(id=game.league_id).maxGames:
                     Compatible = False
@@ -310,23 +258,29 @@ class gameGenerator_df():
 
         ## ENSURE NOT TOO MANY LATE GAMES
         if self.enforceLateGameCap:
+            lateAdder = 0
+            if slot.time.hour > self.lateTimeThreshold: lateAdder = 1
+
             if len(scheduledGamesWithTeam1[pd.to_datetime(
-                    scheduledGamesWithTeam1.time).dt.hour > self.lateTimeThreshold]) > self.maxLateGames:
-                if self.DEBUG: print('Num scheduled for teams: ' + str(len(scheduledGamesWithTeam1[
-                                                                               pd.to_datetime(
-                                                                                   scheduledGamesWithTeam1.time).dt.hour > 18])))
+                    scheduledGamesWithTeam1.time).dt.hour > self.lateTimeThreshold]) + lateAdder > League.objects.get(
+                id=game.league_id).maxLateGames:
+                if self.DEBUG: print('Num late scheduled for team1: ' + str(len(scheduledGamesWithTeam1[
+                                                                                    pd.to_datetime(
+                                                                                        scheduledGamesWithTeam1.time).dt.hour > self.lateTimeThreshold])))
                 Compatible = False
-                if self.DEBUG: print('TOO MANY LATE GAMES ALREADY SCHEDULED')
+                if self.DEBUG: print('TOO MANY LATE GAMES ALREADY SCHEDULED FOR TEAM 1')
+                self.games.ix[gameIndex, 'score'] = 9999999
                 return False
 
-            if len(scheduledGamesWithTeam2[
-                       pd.to_datetime(
-                           scheduledGamesWithTeam2.time).dt.hour > self.lateTimeThreshold]) > self.maxLateGames:
-                if self.DEBUG: print('Num scheduled for teams: ' + str(len(scheduledGamesWithTeam2[
-                                                                               pd.to_datetime(
-                                                                                   scheduledGamesWithTeam2.time).dt.hour > 18])))
+            if len(scheduledGamesWithTeam2[pd.to_datetime(
+                    scheduledGamesWithTeam2.time).dt.hour > self.lateTimeThreshold]) + lateAdder > League.objects.get(
+                id=game.league_id).maxLateGames:
+                if self.DEBUG: print('Num late scheduled for team2: ' + str(len(scheduledGamesWithTeam2[
+                                                                                    pd.to_datetime(
+                                                                                        scheduledGamesWithTeam2.time).dt.hour > self.lateTimeThreshold])))
                 Compatible = False
-                if self.DEBUG: print('TOO MANY LATE GAMES ALREADY SCHEDULED')
+                if self.DEBUG: print('TOO MANY LATE GAMES ALREADY SCHEDULED FOR TEAM 2')
+                self.games.ix[gameIndex, 'score'] = 9999999
                 return False
 
         if Compatible:
