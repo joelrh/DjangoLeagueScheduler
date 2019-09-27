@@ -22,6 +22,7 @@
             <th>Description</th>
             <th>League</th>
             <th>Division</th>
+            <th>Coach</th>
         </tr>
         </thead>
         <tbody>
@@ -37,6 +38,9 @@
                 </td>
                 <td class="align-middle">
                     <a href="{% url 'divisions' team.division.pk %}">{{ team.division }}</a>
+                </td>
+                <td class="align-middle">
+                    <a>{{ team.coach }}</a>
                 </td>
             </tr>
         {% endfor %}

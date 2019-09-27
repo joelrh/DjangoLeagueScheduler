@@ -25,12 +25,15 @@ urlpatterns = [
     url(r'^teams/(?P<pk>\d+)/$', views.teams, name='teams'),
     url(r'^fields/(?P<pk>\d+)/$', views.fields, name='fields'),
     url(r'^divisions/(?P<pk>\d+)/$', views.divisions, name='divisions'),
+    url(r'^coaches/(?P<pk>\d+)/$', views.coaches, name='coaches'),
     url(r'^allfields$', views.allfields, name='allfields'),
     url(r'^allleagues$', views.allleagues, name='allleagues'),
     url(r'^allteams$', views.allteams, name='allteams'),
     url(r'^alldivisions$', views.alldivisions, name='alldivisions'),
     url(r'^allgames$', views.allgames, name='allgames'),
     url(r'^allslots$', views.allslots, name='allslots'),
+    url(r'^allcoaches$', views.allcoaches, name='allcoaches'),
+    url(r'^new_coach$', views.new_coach, name='new_coach'),
     url(r'^new_league$', views.new_league, name='new_league'),
     url(r'^new_team$', views.new_team, name='new_team'),
     url(r'^new_field$', views.new_field, name='new_field'),
@@ -43,6 +46,7 @@ urlpatterns = [
     url(r'^import_all', views.import_all, name='import_all'),
     url(r'^index1', views.index1, name='index1'),
     url(r'^settings$', views.settings, name='settings'),
+
 
     # url(r'^new_division$', views.new_division, name='new_division'),
     # url(r'^leagues/(?P<pk>\d+)/new/$', views.new_league, name='new_league'),

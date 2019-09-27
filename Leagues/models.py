@@ -1,12 +1,7 @@
 from django.db import models
 
-
 # THIS IS THE GLOBAL TO-DO AREA
 # TODO: Definitely need to run multiple runs and keep the best scorer
-#
-# TODO: Need to be able to check for coach overlap
-#
-# TODO: Need to add realistic leagues
 #
 # TODO: website flow needs improvement - how do you know where to start
 #
@@ -29,11 +24,34 @@ from django.db import models
 # TODO: need to make weekend games prime and reflect on a teams score
 #
 # TODO: how to even out the game schedule distribution for teams
+#
+# TODO: Add Coach class and associate with teams - not all teams require a coach
+
+# TODO: need to have 45 min gap between games with same double-duty coaches
+
+# TODO: create discrete schedule based on excel spreadsheet
+
+# TODO: games need to be varied length set per league
+
+# TODO: 2 games scheduled per week in every division - may need to add a check for this after the schedule is generated
+
+# TODO: favor like leagues in back-to-back schedule
+
+# TODO: higher leagues get later games
+
+# TODO: division games on Saturdays
+
+# TODO: younger teams on earlier weeknight slots
+
+# TODO: more CP/TB games on Friday nights
+
+# TODO: add equal rest between games for opponents peewee and above
 
 # Create your models here.
 
 from django.db import models
 from solo.models import SingletonModel
+
 
 class SiteConfiguration(models.Model):
     maxLateGames = models.IntegerField(null=True)
@@ -42,11 +60,19 @@ class SiteConfiguration(models.Model):
 
     @classmethod
     def object(cls):
-        return cls._default_manager.all().first() # Since only one item
+        return cls._default_manager.all().first()  # Since only one item
 
     def save(self, *args, **kwargs):
         self.id = 1
         return super().save(*args, **kwargs)
+
+class Coach(models.Model):
+    firstName = models.CharField(max_length=20, null=False)
+    lastName = models.CharField(max_length=20, null=False)
+
+    def __str__(self):
+        return str(
+            self.firstName.__str__() + " " + self.lastName.__str__())
 
 class League(models.Model):
     name = models.CharField(max_length=20, null=False)
@@ -54,6 +80,8 @@ class League(models.Model):
     description = models.TextField(blank=True, null=True)
     maxLateGames = models.IntegerField(null=True)
     maxGames = models.IntegerField(null=True)
+    gameDuration = models.IntegerField(null=False,default=120)
+
     def __str__(self):
         return self.name
 
@@ -67,16 +95,15 @@ class Division(models.Model):
     def __str__(self):
         return self.name
 
-
 class Team(models.Model):
     name = models.CharField(max_length=20, null=False)
     description = models.TextField(blank=True, null=True)
     league = models.ForeignKey(League, on_delete=models.CASCADE, default='1')
-    division = models.ForeignKey(Division, on_delete=models.CASCADE)#, limit_choices_to={'league':league})
+    division = models.ForeignKey(Division, on_delete=models.CASCADE)  # , limit_choices_to={'league':league})
+    coach = models.ForeignKey(Coach, on_delete=models.CASCADE, null=True)
 
     def __str__(self):
         return str(self.name.__str__() + "-" + self.division.abbreviation.__str__() + "-" + self.league.__str__())
-        # TODO: for some reason this is always displaying "Major" as the league
 
 
 class Field(models.Model):
@@ -93,9 +120,8 @@ class Game(models.Model):
     team2 = models.ForeignKey(Team, related_name='team2', on_delete=models.CASCADE)
     league = models.ForeignKey(League, on_delete=models.CASCADE)
     score = models.IntegerField(null=True)
-    enabled = models.BooleanField(default=True)
-    # isScheduled = models.BooleanField(default=False)
-    # enabled TODO:need to add a field to allow the user to disable a game from being scheduled
+    enabled = models.BooleanField(default=True)  # TODO: Use this to remove games that are no longer "schedule-able"
+    complete = models.BooleanField(default=False)
 
     def shortstr(self):
         return str(self.team1.__str__() + " | " + self.team2.__str__())
@@ -106,17 +132,14 @@ class Game(models.Model):
 
 class Slot(models.Model):
     field = models.ForeignKey(Field, on_delete=models.CASCADE, null=False)
+    league = models.ForeignKey(League, on_delete=models.CASCADE)
     game = models.ForeignKey(Game, on_delete=models.CASCADE, null=True)
     time = models.DateTimeField(null=True)
+    duration = models.IntegerField(null=True)
 
     def __str__(self):
         return str(
             str(self.pk) + " | " + self.field.__str__() + " | " + self.time.__str__() + " | " + self.game.__str__())
 
-class Coach(models.Model):
-    firstName = models.CharField(max_length=20, null=False)
-    lastName = models.CharField(max_length=20, null=False)
 
-    def __str__(self):
-        return str(
-            self.firstName.__str__() + " " + self.lastName.__str__())
+

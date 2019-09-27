@@ -1,5 +1,5 @@
 from django import forms
-from .models import League, Team, Division, Field, Slot, SiteConfiguration
+from .models import League, Team, Division, Field, Slot, Coach, SiteConfiguration
 from django.contrib.admin import widgets
 from django_range_slider.fields import RangeSliderField, RangeSlider
 # from .widgets import RangeSlider
@@ -14,7 +14,6 @@ class SettingsForm(forms.ModelForm):
     class Meta:
         model = SiteConfiguration
         fields = ['maxLateGames', 'enforceLateGameCap','daysBetweenGames']
-
 
 class RangeSliderField(forms.CharField):
     def __init__(self, *args, **kwargs):
@@ -33,8 +32,6 @@ class NewTeamForm(forms.ModelForm):
     #     # self.fields['division'].queryset = Division.objects.filter(
     #     #     league=self.instance.league,
     #     self.fields.get('division').choices = ['1',Division.objects.all().filter()
-
-
 
     class Meta:
         model = Team
@@ -71,19 +68,20 @@ class NewTeamForm(forms.ModelForm):
     #         division_field.choices = division_choices
     #     except:pass
 
-
-
 class NewFieldForm(forms.ModelForm):
     class Meta:
         model = Field
         fields = ['name', 'description', 'league']
 
+class NewCoachForm(forms.ModelForm):
+    class Meta:
+        model = Coach
+        fields = ['firstName', 'lastName']
 
 class NewDivisionForm(forms.ModelForm):
     class Meta:
         model = Division
         fields = ['name', 'description', 'league']
-
 
 class NewSlotForm(forms.ModelForm):
     time = forms.DateTimeField(widget=forms.DateInput(attrs={'placeholder': 'YYYY-MM-DD HH:MM', 'required': 'required'}),input_formats=['%d/%m/%Y %H:%M'])

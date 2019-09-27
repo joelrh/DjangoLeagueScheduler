@@ -5,9 +5,9 @@ from django_tables2 import RequestConfig
 from django.http import Http404
 from Leagues.admin import TeamResource
 from tablib import Dataset
-from .forms import NewLeagueForm, NewTeamForm, NewFieldForm, NewDivisionForm, NewSlotForm, SettingsForm
+from .forms import NewLeagueForm, NewTeamForm, NewFieldForm, NewDivisionForm, NewSlotForm, NewCoachForm, SettingsForm
 from django.http import HttpResponse
-from Leagues.models import League, Team, Division, Field, Game, Slot, SiteConfiguration
+from Leagues.models import League, Team, Division, Field, Game, Slot, Coach, SiteConfiguration
 from Leagues.gameGenerator import generateGames, scheduleGames, removeSchedule, displayStats, importData
 from .tables import GamesTable, SlotsTable
 import pandas as pd
@@ -175,6 +175,27 @@ def divisions(request, pk):
     teams = Team.objects.all().filter(division=division)
     return render(request, 'divisions.html', {'division': division, 'teams': teams})
 
+def coaches(request, pk):
+    coach = get_object_or_404(Coach, pk=pk)
+    games = Game.objects.all().filter(team1__coach=coach) | Game.objects.all().filter(team2__coach=coach)
+
+    game_names = []
+    for game in games:
+        game_names.append(game.shortstr())
+
+    data = []
+    for game in games:
+        try:
+            data.append([game.shortstr(), Slot.objects.get(game=game)])
+        except Slot.DoesNotExist:
+            data.append([game.shortstr(), 'NOT SCHEDULED'])
+
+    a = Slot.objects.all().filter(Q(game__team1__coach=coach) | Q(game__team2__coach=coach))
+    table = SlotsTable(Slot.objects.all().filter(Q(game__team1__coach=coach) | Q(game__team2__coach=coach)))
+    RequestConfig(request).configure(table)
+    return render(request, 'coaches.html', {'coach': coach, 'table': table})
+
+
 
 def allfields(request):
     fields = Field.objects.all()
@@ -218,6 +239,9 @@ def allgames(request):
     RequestConfig(request).configure(table)
     return render(request, 'allgames.html', {'table': table})  # , 'leagues': leagues})
 
+def allcoaches(request):
+    coaches = Coach.objects.all()
+    return render(request, 'allcoaches.html', {'coaches': coaches})
 
 def allslots(request):
     table = SlotsTable(Slot.objects.all())
@@ -342,3 +366,14 @@ def new_division(request):  # , pk):
     else:
         form = NewDivisionForm()
     return render(request, 'new_division.html', {'division': division, 'form': form})
+
+def new_coach(request):  # , pk):
+    coach = Coach()  # get_object_or_404(League, pk=pk)
+    if request.method == 'POST':
+        form = NewCoachForm(request.POST)
+        if form.is_valid():
+            coach = form.save()
+            return redirect('allcoaches')  # , pk=league.pk)  # TODO: redirect to the created topic page
+    else:
+        form = NewCoachForm()
+    return render(request, 'new_coach.html', {'coach': coach, 'form': form})

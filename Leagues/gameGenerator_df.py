@@ -18,6 +18,8 @@ class gameGenerator_df():
         # TODO: figure out why this doesn't work - it is much clearer to use the id as an index
         self.teams = pd.read_sql_query(str(Team.objects.all().query), connection)
         self.teams.set_index('id', inplace=True)
+        self.leagues = pd.read_sql_query(str(Slot.objects.all().query), connection)
+        self.leagues.set_index('id', inplace=True)
 
         self.maxGamesPerDay = 1
         self.enforceLateGameCap = True
@@ -25,6 +27,7 @@ class gameGenerator_df():
         self.lateTimeThreshold = 18
         self.DEBUG = True
         self.daysBetween = 3
+        self.coachOverlapTime = 45 #in minutes
 
     def scheduleGames_df(self):
 
@@ -78,6 +81,8 @@ class gameGenerator_df():
 
             # TODO: Need to find the optimal score based on num slots available for each league - something nice to compare optimization
 
+            # TODO: Need to order the slots in a way that favors younger leagues for earlier slots
+
             # Iterate through every slot and try to schedule the most deserving, compatible game
             for slotIndex, slot in slots.iterrows():
 
@@ -88,7 +93,7 @@ class gameGenerator_df():
                 unscheduledGames = self.games[
                     ~self.games['id'].isin(self.slots.query('not game_id.isnull()')['game_id'])]
 
-                # finds the leagures that the field is compatible with
+                # finds the leagues that the field is compatible with
                 leagues = League.objects.all().filter(field__pk=slot.field_id)
                 leagues_str = []
                 for league in leagues:
@@ -114,9 +119,12 @@ class gameGenerator_df():
                 # get games that don't have any of these teams in them
                 # USECOMPATIBLEGAMESLIST = True
                 # if USECOMPATIBLEGAMESLIST:
+
                 # Get all unscheduled slots
                 scheduledSlots = self.slots.query('not game_id.isnull()')
-                # Get all slots within time bubble
+
+                # ENFORCE "DAYS BETWEEN" RULE
+                # Get all slots within time bubble - these are games within the "days Between" limitation
                 slotsWithinTimeBubble = scheduledSlots[
                     (scheduledSlots['time'] < slot.time + timedelta(days=self.daysBetween)) & (
                             scheduledSlots['time'] > slot.time - timedelta(days=self.daysBetween))]
@@ -126,7 +134,25 @@ class gameGenerator_df():
                 # Get all teams from games withing time bubble
                 teamsWithGamesInTimeBubble = pd.concat(
                     [gamesWithinTimeBubble.team1_id, gamesWithinTimeBubble.team2_id])
-                # gat all uscheduled games minus the teams with games in time bubble
+
+                # ENFORCE COACH OVERLAP RULE
+                # Get all slots within coach overlap bubble
+                # TODO:  need to fix time before start and time after end - use gameDuration
+                slotsWithinCoachOverlap = scheduledSlots[
+                    (scheduledSlots['time'] < slot.time + timedelta(minutes=self.coachOverlapTime+120)) & (
+                            scheduledSlots['time'] > slot.time - timedelta(minutes=self.coachOverlapTime+120))]
+                # if slotsWithinCoachOverlap.size > 0:
+                #     print('overlap')
+                # Get all games from slots coach overlap bubble
+                gamesWithinCoachOverlap = self.games[
+                    self.games['id'].isin(slotsWithinCoachOverlap['game_id'])]
+                # Get all teams from games withing coach overlap
+                teamsWithGamesInCoachOverlap = pd.concat(
+                    [gamesWithinCoachOverlap.team1_id, gamesWithinCoachOverlap.team2_id])
+                # coachesWithGamesInCoachOverlap = gamesWithinCoachOverlap.coach_id
+
+
+                # get all unscheduled games minus the teams with games in time bubble
                 gamesWithTeamsWithGamesOutsideTimeBubble = unscheduledGamesInLeague[
                     (~unscheduledGamesInLeague['team1_id'].isin(teamsWithGamesInTimeBubble)) & (
                         ~unscheduledGamesInLeague['team2_id'].isin(teamsWithGamesInTimeBubble))]
@@ -137,7 +163,7 @@ class gameGenerator_df():
                 for gameIndex, game in unscheduledGamesSortedByLowestScore.iterrows():
                     # ensure that the game is not already scheduled - this shouldn't happen but it is good to check
                     if len(self.slots[self.slots.game_id == game.id]) == 0:
-                        if self.scheduleGame_df(slot, slotIndex, game, gameIndex):
+                        if self.scheduleGame_df(slot, slotIndex, game, gameIndex, teamsWithGamesInCoachOverlap):
                             if self.DEBUG: print('game scheduled')
                             print('-----------------------------------------------------------------------------------')
                             print('NUMBER GAMES UNSCHEDULED: ' + str(
@@ -150,7 +176,7 @@ class gameGenerator_df():
         if self.DEBUG: print('ELAPSED TIME:' + str(elapsed_time))
         self.transferScheduleFromDfToObject()
 
-    def scheduleGame_df(self, slot, slotIndex, game, gameIndex):
+    def scheduleGame_df(self, slot, slotIndex, game, gameIndex, teamsWithGamesInCoachOverlap):
 
         if self.DEBUG: print('ATTEMPTING TO SCHEDULING GAME ' + str(game.id))
         if self.DEBUG: print(Game.objects.all().filter(pk=game.id)[0])
@@ -285,6 +311,17 @@ class gameGenerator_df():
 
         if Compatible:
             if self.DEBUG: print('NO LATE GAME CONFLICTS')
+
+        ## ENSURE THAT EITHER COACH OF GAME DOESN'T HAVE A GAME WITHIN 45 MIN OF START OR END TIME
+        CHECKCOACHOVERLAP = True
+        if CHECKCOACHOVERLAP and teamsWithGamesInCoachOverlap.size > 0:
+            team1_coach = self.teams.ix[game.team1_id].coach_id
+            team2_coach = self.teams.ix[game.team2_id].coach_id
+            for team_id in teamsWithGamesInCoachOverlap:
+                if not np.isnan(self.teams.ix[team_id].coach_id) and (self.teams.ix[team_id].coach_id == team1_coach or self.teams.ix[team_id].coach_id == team2_coach):
+                    Compatible = False
+                    if self.DEBUG: print('A Coach has another game scheduled too close to this slot')
+                    return False
 
         # ENSURE NO MORE THAN 2 GAMES PER WEEK
         # THIS NEEDS IMPLEMENTATION
