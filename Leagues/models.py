@@ -98,9 +98,10 @@ class Division(models.Model):
 class Team(models.Model):
     name = models.CharField(max_length=20, null=False)
     description = models.TextField(blank=True, null=True)
-    league = models.ForeignKey(League, on_delete=models.CASCADE, default='1')
+    league = models.ForeignKey(League, on_delete=models.CASCADE)
     division = models.ForeignKey(Division, on_delete=models.CASCADE)  # , limit_choices_to={'league':league})
     coach = models.ForeignKey(Coach, on_delete=models.CASCADE, null=True)
+    #coach = models.ManyToManyField(Coach)
 
     def __str__(self):
         return str(self.name.__str__() + "-" + self.division.abbreviation.__str__() + "-" + self.league.__str__())
@@ -122,6 +123,7 @@ class Game(models.Model):
     score = models.IntegerField(null=True)
     enabled = models.BooleanField(default=True)  # TODO: Use this to remove games that are no longer "schedule-able"
     complete = models.BooleanField(default=False)
+    handicap = models.IntegerField(default=0)
 
     def shortstr(self):
         return str(self.team1.__str__() + " | " + self.team2.__str__())

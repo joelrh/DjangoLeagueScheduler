@@ -26,7 +26,7 @@ class gameGenerator_df():
         self.maxLateGames = 1
         self.lateTimeThreshold = 18
         self.DEBUG = True
-        self.daysBetween = 3
+        self.daysBetween = 2
         self.coachOverlapTime = 45 #in minutes
 
     def scheduleGames_df(self):
@@ -100,7 +100,10 @@ class gameGenerator_df():
                     leagues_str.append(league.pk)
 
                 # removes games not compatible with the field
-                unscheduledGamesInLeague = unscheduledGames[unscheduledGames['league_id'].isin(leagues_str)]
+                # unscheduledGamesInLeague = unscheduledGames[unscheduledGames['league_id'].isin(leagues_str)]
+
+                # removes games not compatible with the slot
+                unscheduledGamesInLeague = unscheduledGames.loc[unscheduledGames['league_id'] == slot.league_id]
 
                 # removes games that can't be scheduled due to MAX games or MAX late games
                 unscheduledGamesInLeague = unscheduledGamesInLeague.loc[(unscheduledGamesInLeague['score'] != 9999999)]
@@ -318,7 +321,7 @@ class gameGenerator_df():
             team1_coach = self.teams.ix[game.team1_id].coach_id
             team2_coach = self.teams.ix[game.team2_id].coach_id
             for team_id in teamsWithGamesInCoachOverlap:
-                if not np.isnan(self.teams.ix[team_id].coach_id) and (self.teams.ix[team_id].coach_id == team1_coach or self.teams.ix[team_id].coach_id == team2_coach):
+                if not self.teams.ix[team_id].coach_id is None and (self.teams.ix[team_id].coach_id == team1_coach or self.teams.ix[team_id].coach_id == team2_coach):
                     Compatible = False
                     if self.DEBUG: print('A Coach has another game scheduled too close to this slot')
                     return False
@@ -445,6 +448,9 @@ class gameGenerator_df():
             scheduledGamesWithTeams = scheduledGames[scheduledGames['game_id'].isin(gameswithteams2['id'])]
             if len(scheduledGamesWithTeams) < averageScheduledGamesInLeaguePerTeam:
                 score = score - ((averageScheduledGamesInLeaguePerTeam - len(scheduledGamesWithTeams)) * 100)
+
+        # Account for Hanidcap if needed
+        score = score + game.handicap
 
         self.games.ix[gameIndex, 'score'] = score
 

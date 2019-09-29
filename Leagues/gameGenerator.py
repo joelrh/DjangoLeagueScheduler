@@ -1,4 +1,4 @@
-from .models import League, Game, Field, Division, Team, Slot
+from .models import League, Game, Field, Division, Team, Slot, Coach
 import time
 from django.db.models import Q
 import pandas as pd
@@ -11,10 +11,18 @@ from Leagues.admin import TeamResource
 def importData():
     # ORDER MATTERS HERE
 
+    # IMPORT COACHES
+    Coach.objects.all().delete()
+    my_dataset = tablib.Dataset(headers=['id', 'firstName', 'lastName'])
+    my_dataset.xlsx = open('data\9-29-19_data\Coach-2019-09-29.xlsx', 'rb').read()
+    print(my_dataset)
+    slot_resource = resources.modelresource_factory(model=Coach)()
+    slot_resource.import_data(my_dataset, dry_run=False)
+
     # IMPORT LEAGUES
     League.objects.all().delete()
-    my_dataset = tablib.Dataset(headers=['id', 'name', 'abbreviation', 'description'])
-    my_dataset.xlsx = open('data\League-2019-07-26.xlsx', 'rb').read()
+    my_dataset = tablib.Dataset(headers=['id', 'name', 'abbreviation', 'description','maxLateGames','maxGames','gameDuration'])
+    my_dataset.xlsx = open('data\9-29-19_data\League-2019-09-29-mod.xlsx', 'rb').read()
     print(my_dataset)
     division_resource = resources.modelresource_factory(model=League)()
     division_resource.import_data(my_dataset, dry_run=False)
@@ -22,15 +30,15 @@ def importData():
     # IMPORT DIVISIONS
     Division.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'name', 'abbreviation', 'description','league'])
-    my_dataset.xlsx = open('data\Division-2019-07-26.xlsx', 'rb').read()
+    my_dataset.xlsx = open('data\9-29-19_data\Division-2019-09-29-mod.xlsx', 'rb').read()
     print(my_dataset)
     division_resource = resources.modelresource_factory(model=Division)()
     division_resource.import_data(my_dataset, dry_run=False)
 
     # IMPORT TEAMS
     Team.objects.all().delete()
-    my_dataset = tablib.Dataset(headers=['id', 'name','description','league','division'])
-    my_dataset.xlsx = open('data\Team-2019-07-26.xlsx', 'rb').read()
+    my_dataset = tablib.Dataset(headers=['id', 'name','description','league','division','coach'])
+    my_dataset.xlsx = open('data\9-29-19_data\Team-2019-09-29-mod.xlsx', 'rb').read()
     print(my_dataset)
     team_resource = resources.modelresource_factory(model=Team)()
     team_resource.import_data(my_dataset, dry_run=False)
@@ -38,15 +46,15 @@ def importData():
     # IMPORT FIELDS
     Field.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'name','description','league'])
-    my_dataset.xlsx = open('data\Field-2019-07-26.xlsx', 'rb').read()
+    my_dataset.xlsx = open('data\9-29-19_data\Field-2019-09-29-mod.xlsx', 'rb').read()
     print(my_dataset)
     field_resource = resources.modelresource_factory(model=Field)()
     field_resource.import_data(my_dataset, dry_run=False)
 
     # IMPORT SLOTS
     Slot.objects.all().delete()
-    my_dataset = tablib.Dataset(headers=['id', 'field', 'game', 'time'])
-    my_dataset.xlsx = open('data\Slot-2019-07-26.xlsx', 'rb').read()
+    my_dataset = tablib.Dataset(headers=['id', 'field', 'league', 'game', 'time', 'duration'])
+    my_dataset.xlsx = open('data\9-29-19_data\Slot-2019-09-29-mod.xlsx', 'rb').read()
     print(my_dataset)
     slot_resource = resources.modelresource_factory(model=Slot)()
     slot_resource.import_data(my_dataset, dry_run=False)
@@ -56,8 +64,19 @@ def importData():
 def generateGames():
     print('GENERATING GAMES')
     leagues = League.objects.all()
+
     for league in leagues:
         teams = Team.objects.all().filter(league=league).order_by('?')
+
+        #if there are fewer teams than maxGames - double up
+        print('Number of teams in league')
+        print(len(Team.objects.all().filter(league=league.id)))
+        print('Max Games set for league')
+        print(league.maxGames)
+        doubleUp=False
+        if len(Team.objects.all().filter(league=league.id)) < league.maxGames:
+            doubleUp=True
+
         for team1 in teams:
             for team2 in teams:
                 checkTeam1 = Game.objects.all().filter(team1=team1, team2=team2)
@@ -66,6 +85,14 @@ def generateGames():
                     game = Game(team1=team1, team2=team2, league=team1.league)
                     game.save()
                     print('ADDING: ' + game.__str__())
+                    if doubleUp:
+                        game = Game(team1=team1, team2=team2, league=team1.league, handicap=250)
+                        game.save()
+                        print('ADDING: ' + game.__str__())
+        print('Num Games generated for league')
+        print(len(Game.objects.all().filter(league=league.id)))
+        print('Num Games generated for all leagues')
+        print(len(Game.objects.all()))
 
 def removeSchedule():
     slots = Slot.objects.all().filter(~Q(game = None))
