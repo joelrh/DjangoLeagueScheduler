@@ -13,21 +13,9 @@ from django.db import models
 #
 # TODO: Add iteration that removes a game from a high scoring team and gives the others a shot
 #
-# TODO: remove team1/team2 and use teams instead.  This will eliminate the need to check for team1 and team2 - can use "__in"
-#
 # TODO: how to let the user make scheduling suggestions / corrections / confirmations
 #
 # TODO: add ability to run back through the schedule and remove games with the best situated teams and rerun with games for least suited teams
-#
-# TODO: add some sore of schedule distribution for each team
-#
-# TODO: need to make weekend games prime and reflect on a teams score
-#
-# TODO: how to even out the game schedule distribution for teams
-#
-# TODO: Add Coach class and associate with teams - not all teams require a coach
-
-# TODO: need to have 45 min gap between games with same double-duty coaches
 
 # TODO: create discrete schedule based on excel spreadsheet
 
@@ -35,21 +23,11 @@ from django.db import models
 
 # TODO: 2 games scheduled per week in every division - may need to add a check for this after the schedule is generated
 
-# TODO: favor like leagues in back-to-back schedule
-
-# TODO: higher leagues get later games
-
-# TODO: division games on Saturdays
-
-# TODO: younger teams on earlier weeknight slots
-
-# TODO: more CP/TB games on Friday nights
-
 # TODO: add equal rest between games for opponents peewee and above
 
-# TODO: add loop to try and schedule slot based on the alternate league compatibility
-
 # TODO: need better way to view the slots since they all start on different times and have different durations
+
+# TODO: need to go thorugh the schedule and find days where there are only 1-2 games scheduled / remove these games / mark slots as unavailable/ and attempy to reschedule them
 
 # Create your models here.
 

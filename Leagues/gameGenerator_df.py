@@ -148,8 +148,9 @@ class gameGenerator_df():
                 teamsWithGamesOnSameDay=[]
                 if DAYSBETWEEN and minDaysBetween > 0:
                     # Get all slots within time bubble - these are games within the "days Between" limitation
-                    minDate = slot.time - timedelta(days=minDaysBetween)
-                    maxDate = slot.time + timedelta(days=minDaysBetween)
+                    # TODO: Shoudl just look at days and not hours (e.g. min date should be midnight 2 days before)
+                    minDate = slot.time - timedelta(days=minDaysBetween)+timedelta(hours=24-slot.time.hour)
+                    maxDate = slot.time + timedelta(days=minDaysBetween)+timedelta(hours=24-slot.time.hour)
                     print("slot Date:    " + slot.time.strftime("%m/%d/%Y, %H:%M"))
                     print("minimum Date: " + minDate.strftime("%m/%d/%Y, %H:%M"))
                     print("maximum Date: " + maxDate.strftime("%m/%d/%Y, %H:%M"))
@@ -377,6 +378,31 @@ class gameGenerator_df():
 
         if Compatible:
             if self.DEBUG: print('NO LATE GAME CONFLICTS')
+
+        ## MAX OF GAMES PER WEEK
+        CHECKMAXGAMESPERWEEK = True
+        if CHECKMAXGAMESPERWEEK:
+            print('')
+            GamesThisWeekforTeam1 = []
+            GamesThisWeekforTeam2 = []
+            weekStart = slot.time - timedelta(days=slot.time.weekday(), hours=slot.time.hour, minutes=slot.time.minute)
+            weekEnd = weekStart + timedelta(days=7)
+            GamesThisWeekforTeam1 = scheduledGamesWithTeam1[
+                (scheduledGamesWithTeam1['time'] >= weekStart) & (scheduledGamesWithTeam2['time'] <= weekEnd)]
+            GamesThisWeekforTeam2 = scheduledGamesWithTeam2[
+                (scheduledGamesWithTeam2['time'] >= weekStart) & (scheduledGamesWithTeam2['time'] <= weekEnd)]
+            if len(GamesThisWeekforTeam1)>=3 or len(GamesThisWeekforTeam2)>=3:
+                Compatible = False
+                if self.DEBUG: print('A Team already has 3 games scheduled this week')
+                return False
+            if self.DEBUG: print('Both teams under max game limit of 3 :' + str(len(GamesThisWeekforTeam1)) + " " + str(len(GamesThisWeekforTeam2)))
+
+            # for game in scheduledGamesWithTeam1:
+            #     if game.time > weekStart and game.time < weekStart
+            #         scheduledGamesWithTeam2
+
+
+
 
         ## ENSURE THAT EITHER COACH OF GAME DOESN'T HAVE A GAME WITHIN 45 MIN OF START OR END TIME
         CHECKCOACHOVERLAP = True
