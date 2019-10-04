@@ -14,6 +14,7 @@ import pandas as pd
 from django.db.models import Q
 import numpy as np
 from Leagues.tools import convertDatetimeToString
+import datetime
 
 
 # Create your views here.
@@ -175,6 +176,7 @@ def divisions(request, pk):
     teams = Team.objects.all().filter(division=division)
     return render(request, 'divisions.html', {'division': division, 'teams': teams})
 
+
 def coaches(request, pk):
     coach = get_object_or_404(Coach, pk=pk)
     games = Game.objects.all().filter(team1__coach=coach) | Game.objects.all().filter(team2__coach=coach)
@@ -194,7 +196,6 @@ def coaches(request, pk):
     table = SlotsTable(Slot.objects.all().filter(Q(game__team1__coach=coach) | Q(game__team2__coach=coach)))
     RequestConfig(request).configure(table)
     return render(request, 'coaches.html', {'coach': coach, 'table': table})
-
 
 
 def allfields(request):
@@ -239,9 +240,11 @@ def allgames(request):
     RequestConfig(request).configure(table)
     return render(request, 'allgames.html', {'table': table})  # , 'leagues': leagues})
 
+
 def allcoaches(request):
     coaches = Coach.objects.all()
     return render(request, 'allcoaches.html', {'coaches': coaches})
+
 
 def allslots(request):
     table = SlotsTable(Slot.objects.all())
@@ -251,18 +254,42 @@ def allslots(request):
     slot_names = []
     field_names = []
     for slot in slots:
-
         if slot.time.strftime("%Y-%m-%d %H:%M") not in slot_names:
             slot_names.append(slot.time.strftime("%Y-%m-%d %H:%M"))
+    field_names.append('Day')
     for field in fields:
         field_names.append(field.name)
     matrix = []
     df = pd.DataFrame(matrix, columns=field_names, index=slot_names)
+    for col in df.columns:
+        df[col].values[:] = ''
+
 
     for slot in slots:
+
+
         if not slot.game == None:
             df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = slot.game.shortstr()
-
+            if slot.game.league_id in [1,2,3,4,5,6,7]:
+                df.at[(slot.time + datetime.timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M"), slot.field.name] = "[]"
+                df.at[(slot.time + datetime.timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M"), slot.field.name] = "[]"
+                df.at[(slot.time + datetime.timedelta(minutes=45)).strftime("%Y-%m-%d %H:%M"), slot.field.name] = "[]"
+                df.at[(slot.time + datetime.timedelta(minutes=60)).strftime("%Y-%m-%d %H:%M"), slot.field.name] = "[]"
+            if slot.game.league_id in [1, 2, 3, 4, 5]:
+                df.at[(slot.time + datetime.timedelta(minutes=75)).strftime("%Y-%m-%d %H:%M"), slot.field.name] = "[]"
+            if slot.game.league_id in [1, 2, 3, 4, 5]:
+                df.at[(slot.time + datetime.timedelta(minutes=90)).strftime("%Y-%m-%d %H:%M"), slot.field.name] = "[]"
+            if slot.game.league_id in [1, 2, 3, 4]:
+                df.at[(slot.time + datetime.timedelta(minutes=105)).strftime("%Y-%m-%d %H:%M"), slot.field.name] = "[]"
+            if slot.game.league_id in [1, 2]:
+                df.at[(slot.time + datetime.timedelta(minutes=120)).strftime("%Y-%m-%d %H:%M"), slot.field.name] = "[]"
+        else: df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = "UNSCHEDULED"
+                # df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = slot.game.shortstr()
+                # df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = slot.game.shortstr()
+        # else:
+        #     df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = "A"
+        df.at[slot.time.strftime("%Y-%m-%d %H:%M"), 'Day'] = slot.time.weekday()
+    df = df.sort_index()
     return render(request, 'allslots.html', {'table': table, 'table2': df.to_html(justify='center')})
 
 
@@ -366,6 +393,7 @@ def new_division(request):  # , pk):
     else:
         form = NewDivisionForm()
     return render(request, 'new_division.html', {'division': division, 'form': form})
+
 
 def new_coach(request):  # , pk):
     coach = Coach()  # get_object_or_404(League, pk=pk)

@@ -47,6 +47,10 @@ from django.db import models
 
 # TODO: add equal rest between games for opponents peewee and above
 
+# TODO: add loop to try and schedule slot based on the alternate league compatibility
+
+# TODO: need better way to view the slots since they all start on different times and have different durations
+
 # Create your models here.
 
 from django.db import models
@@ -81,6 +85,7 @@ class League(models.Model):
     maxLateGames = models.IntegerField(null=True)
     maxGames = models.IntegerField(null=True)
     gameDuration = models.IntegerField(null=False,default=120)
+    daysBetween = models.IntegerField(null=False,default=0)
 
     def __str__(self):
         return self.name
@@ -134,10 +139,15 @@ class Game(models.Model):
 
 class Slot(models.Model):
     field = models.ForeignKey(Field, on_delete=models.CASCADE, null=False)
-    league = models.ForeignKey(League, on_delete=models.CASCADE)
+    # league = models.ManyToManyField(League, related_name='league')
+    primaryLeague = models.ForeignKey(League, on_delete=models.CASCADE, null=False, related_name='primaryLeague')
+    secondaryLeague = models.ManyToManyField(League,related_name='secondaryLeague')
     game = models.ForeignKey(Game, on_delete=models.CASCADE, null=True)
     time = models.DateTimeField(null=True)
     duration = models.IntegerField(null=True)
+
+    class Meta:
+        get_latest_by = 'time'
 
     def __str__(self):
         return str(
