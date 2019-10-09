@@ -80,8 +80,8 @@ def home(request):
     # else:
     #     form = SettingsForm()
     # return render(request, 'settings.html', {'config': config, 'form': form}
-    df, numGamesUnscheduled, numSlotsUnscheduled, totalScore = displayStats()
-    return render(request, 'home.html', {'df': df.to_html(justify='center'),
+    df, df_slots, numGamesUnscheduled, numSlotsUnscheduled, totalScore = displayStats()
+    return render(request, 'home.html', {'df': df.to_html(justify='center'), 'df_slots': df_slots.to_html(justify='center'),
                                          'numGamesUnscheduled': numGamesUnscheduled,
                                          'numSlotsUnscheduled': numSlotsUnscheduled,
                                          'totalScore': totalScore,
@@ -288,7 +288,7 @@ def allslots(request):
                 # df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = slot.game.shortstr()
         # else:
         #     df.at[slot.time.strftime("%Y-%m-%d %H:%M"), slot.field.name] = "A"
-        df.at[slot.time.strftime("%Y-%m-%d %H:%M"), 'Day'] = slot.time.weekday()
+        df.at[slot.time.strftime("%Y-%m-%d %H:%M"), 'Day'] = slot.time.strftime("%A")
     df = df.sort_index()
     return render(request, 'allslots.html', {'table': table, 'table2': df.to_html(justify='center')})
 

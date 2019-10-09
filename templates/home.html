@@ -51,9 +51,9 @@
 
     <table class="table">
         <td>
-{#            <div class="mb-4">#}
-{#                <a href="{% url 'settings' %}" class="btn btn-primary">Scheduler Settings</a>#}
-{#            </div>#}
+            {#            <div class="mb-4">#}
+            {#                <a href="{% url 'settings' %}" class="btn btn-primary">Scheduler Settings</a>#}
+            {#            </div>#}
             <div class="mb-4">
                 <a href="{% url 'reset_games' %}" class="btn btn-primary">Reset Schedule</a>
             </div>
@@ -114,5 +114,8 @@
             <td>Optimization Score: {{ totalScore }}</td>
         </tr>
     </table>
-    {{ df | safe }}
+    <tr>
+        <td>{{ df | safe }}</td>
+        <td>{{ df_slots | safe }}</td>
+    </tr>
 {% endblock %}

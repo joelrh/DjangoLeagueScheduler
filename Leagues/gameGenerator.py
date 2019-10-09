@@ -130,6 +130,29 @@ def scheduleGames():
 
 
 def displayStats():
+    # TODO:  Add slot performance table (# of # scheduled per day)
+
+    slots = Slot.objects.all().order_by('time')
+    slot_names = []
+    num_slots_on_day = []
+    num_scheduled_slots_on_day=[]
+    matrix=[]
+    df_slots = pd.DataFrame(matrix,columns=['day','num_slots_on_day','num_scheduled_slots_on_day','percent'])
+
+    for slot in slots:
+        if slot.time.strftime("%Y-%m-%d") not in slot_names:
+            slot_names.append(slot.time.strftime("%Y-%m-%d"))
+            num_slots_on_day =  len(Slot.objects.all().filter(time__date=slot.time.date()))
+            num_scheduled_slots_on_day = len(Slot.objects.all().filter(Q(time__date=slot.time.date()),~Q(game=None)))
+            df_slots.at[slot.time.strftime("%Y-%m-%d"), 'day'] = slot.time.strftime("%A")
+            df_slots.at[slot.time.strftime("%Y-%m-%d"), 'num_slots_on_day'] = num_slots_on_day
+            df_slots.at[slot.time.strftime("%Y-%m-%d"), 'num_scheduled_slots_on_day'] = num_scheduled_slots_on_day
+            df_slots.at[slot.time.strftime("%Y-%m-%d"), 'percent'] = (num_scheduled_slots_on_day/num_slots_on_day)*100
+
+    # df_slots = pd.DataFrame(matrix, columns=['num_slots_on_day','num_scheduled_slots_on_day'], index=slot_names)
+
+
+
     teams = Team.objects.all().order_by('league')
     team_names = []
     # column_names = ['description', 'numScheduled', 'numUnscheduled', 'numDivisionalScheduled', 'numTotalDivisional',
@@ -216,4 +239,4 @@ def displayStats():
 
 
 
-    return df, numGamesUnscheduled, numSlotsUnscheduled, totalScore
+    return df, df_slots, numGamesUnscheduled, numSlotsUnscheduled, totalScore
