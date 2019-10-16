@@ -12,12 +12,22 @@
 
 {% block content %}
 
-        <div class="mb-4">
-            <a href="{% url 'new_slot' %}" class="btn btn-primary">New Slot</a>
-        </div>
+    <div class="mb-4">
+        <a href="{% url 'new_slot' %}" class="btn btn-primary">New Slot</a>
+    </div>
+    <div>
+        {{ table3 | safe }}
 
-    {{ table2 | safe }}
-    {% for key, value in df %} <tr> <td> Key: {{ key }} </td> <td> Value: {{ value }} </td> </tr> {% endfor %}
-    {%   render_table table %}
-    </body>
+    </div>
+{#    <div>#}
+{#        {{ table2 | safe }}#}
+{##}
+{#    </div>#}
+    {% for key, value in df %}
+        <tr>
+            <td> Key: {{ key }} </td>
+            <td> Value: {{ value }} </td>
+        </tr> {% endfor %}
+    {% render_table table %}
+
 {% endblock %}

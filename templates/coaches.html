@@ -28,6 +28,33 @@
         {#        {% endfor %}#}
         </tbody>
     </table>
+    <table class="table">
+        <thead class="thead-inverse">
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>League</th>
+            <th>Division</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for team in teams %}
+            <tr>
+                <td>
+                    <a href="{% url 'teams' team.pk %}">{{ team.name }}</a>
+                    <small class="text-muted d-block">{{ team.description }}</small>
+                </td>
+                <td class="align-middle">{{ team.description }}</td>
+                <td class="align-middle">
+                    <a href="{% url 'leagues' team.league.pk %}">{{ team.league }}</a>
+                </td>
+                <td class="align-middle">
+                    <a href="{% url 'divisions' team.division.pk %}">{{ team.division }}</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 {##}
     <table class="table">
         <thead class="thead-inverse">

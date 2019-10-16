@@ -22,6 +22,7 @@
             <th>Description</th>
             <th>Maximum Late Games</th>
             <th>Maximum Number of Total Games</th>
+            <th>Days Between Games</th>
         </tr>
         </thead>
         <tbody>
@@ -34,6 +35,7 @@
                 <td class="align-middle">{{ league.description }}</td>
                 <td class="align-middle">{{ league.maxLateGames }}</td>
                 <td class="align-middle">{{ league.maxGames }}</td>
+                <td class="align-middle">{{ league.daysBetween }}</td>
 
             </tr>
         {% endfor %}

@@ -43,20 +43,24 @@ class gameGenerator_df():
 
         numberRetried = 0
         useSecondaryLeague = False
+        removeUnderUtilizedSlotDays = False
         # lateCap = 2
 
         SCHEDULINGCOMPLETE = False
         while len(self.games[~self.games['id'].isin(self.slots.query('not game_id.isnull()')['game_id'])]) > 0 and \
                 len(self.slots.query('game_id.isnull()')) > 0 and \
-                numberRetried < 3 and \
+                numberRetried <= 6 and \
                 not SCHEDULINGCOMPLETE:
+
+            numberRetried = numberRetried + 1
 
             # The first pass uses the max days between and primary league
             # the next pass uses the secondary and reduces days between
-            numberRetried = numberRetried + 1
             if numberRetried > 1:
                 useSecondaryLeague = True
                 self.daysBetween = max(self.daysBetween - 1, 0)
+
+
 
             print('-----------------------------------------------------------------------------------')
             print('-----------------------------------------------------------------------------------')
@@ -64,6 +68,34 @@ class gameGenerator_df():
             print('   Late Game Threshold: ' + str(self.lateTimeThreshold))
             print('-----------------------------------------------------------------------------------')
             print('-----------------------------------------------------------------------------------')
+
+            # The third pass will go through and remove all scheduled games on underutilized days
+            scheduledSlots = self.slots.query('not game_id.isnull()')
+            unscheduledSlots = self.slots.query('game_id.isnull()')
+            # removeUnderUtilizedSlotDays=True
+            if numberRetried == 3 and removeUnderUtilizedSlotDays:
+                for slotIndex, slot in self.slots.iterrows():
+                    print(slot)
+                    slotsOnSameDay = self.slots[
+                        pd.to_datetime(self.slots.time).dt.date == slot.time.date()]
+                    scheduledSlotsonSameDay = scheduledSlots[
+                        pd.to_datetime(scheduledSlots.time).dt.date == slot.time.date()]
+                    unscheduledSlotsonSameDay = unscheduledSlots[
+                        pd.to_datetime(unscheduledSlots.time).dt.date == slot.time.date()]
+                    # print('slotsOnSameDay scheduledSlotsonSameDay unscheduledSlotsonSameDay')
+                    # print(str(len(slotsOnSameDay)) + " " + str(len(scheduledSlotsonSameDay)) + " " + str(
+                    #     len(unscheduledSlotsonSameDay)))
+                    if len(slotsOnSameDay) > 0:
+                        # print('ratio: ' + str(len(scheduledSlotsonSameDay) / len(slotsOnSameDay)))
+                        if len(scheduledSlotsonSameDay) / len(slotsOnSameDay) < 0.5:
+                            # print('Removing these Slots')
+                            # print(self.slots[pd.to_datetime(self.slots.time).dt.date == slot.time.date()])
+                            # print(len(self.slots))
+                            self.slots = self.slots[pd.to_datetime(self.slots.time).dt.date != slot.time.date()]
+                            # print(len(self.slots))
+                self.games = self.games.assign(score=0)
+                self.updateGameScores_df()
+                self.slots = self.slots.assign(game=None)
 
             slots = self.slots.query('game_id.isnull()')
 
@@ -152,7 +184,6 @@ class gameGenerator_df():
                 teamsWithGamesOnSameDay = []
                 if DAYSBETWEEN and minDaysBetween > 0:
                     # Get all slots within time bubble - these are games within the "days Between" limitation
-                    # TODO: Shoudl just look at days and not hours (e.g. min date should be midnight 2 days before)
                     minDate = slot.time - timedelta(days=minDaysBetween) + timedelta(hours=24 - slot.time.hour)
                     maxDate = slot.time + timedelta(days=minDaysBetween) - timedelta(hours=slot.time.hour)
                     print("slot Date:    " + slot.time.strftime("%m/%d/%Y, %H:%M"))
@@ -160,14 +191,14 @@ class gameGenerator_df():
                     print("maximum Date: " + maxDate.strftime("%m/%d/%Y, %H:%M"))
                     slotsWithinTimeBubble = scheduledSlots[(scheduledSlots['time'] > minDate) &
                                                            (scheduledSlots['time'] < maxDate)]
-                    # slotsWithinTimeBubble = scheduledSlots[
-                    #     (pd.to_datetime(scheduledSlots.time).dt.day < pd.to_datetime(scheduledSlots.time).dt.day + minDaysBetween) & (
-                    #             pd.to_datetime(scheduledSlots.time).dt.day > pd.to_datetime(scheduledSlots.time).dt.day - minDaysBetween)]
+
                     print("num slots within time bubble: " + str(len(slotsWithinTimeBubble)))
+
                     # Get all games from slots within time bubble
                     gamesWithinTimeBubble = self.games[
                         self.games['id'].isin(slotsWithinTimeBubble['game_id'])]
                     print("num games within time bubble: " + str(len(gamesWithinTimeBubble)))
+
                     # Get all teams from games withing time bubble
                     teamsWithGamesInTimeBubble = pd.concat(
                         [gamesWithinTimeBubble.team1_id, gamesWithinTimeBubble.team2_id])
@@ -178,6 +209,7 @@ class gameGenerator_df():
                     print()
                     # ENFORCE "1 GAME / DAY RULE" RULE
                     # Get all slots within time bubble - these are games within the "days Between" limitation
+                    # TODO: Change this to date instead of day all over this function
                     slotsonSameDay = scheduledSlots[pd.to_datetime(scheduledSlots.time).dt.day == slot.time.day]
                     print("num scheduled slots on same day: " + str(len(slotsonSameDay)))
                     # Get all games from slots within time bubble
@@ -189,24 +221,20 @@ class gameGenerator_df():
                         [gamesOnSameDay.team1_id, gamesOnSameDay.team2_id])
                     print("num teams on same day: " + str(len(teamsWithGamesOnSameDay)))
 
-                # len(scheduledGamesWithTeams[pd.to_datetime(scheduledGamesWithTeams.time).dt.day == pd.to_datetime(
-                #     slot.time).day]) > self.maxGamesPerDay:
-
                 # ENFORCE COACH OVERLAP RULE
                 # Get all slots within coach overlap bubble
                 # TODO:  need to fix time before start and time after end - use gameDuration
                 slotsWithinCoachOverlap = scheduledSlots[
                     (scheduledSlots['time'] < slot.time + timedelta(minutes=self.coachOverlapTime + 120)) & (
                             scheduledSlots['time'] > slot.time - timedelta(minutes=self.coachOverlapTime + 120))]
-                # if slotsWithinCoachOverlap.size > 0:
-                #     print('overlap')
+
                 # Get all games from slots coach overlap bubble
                 gamesWithinCoachOverlap = self.games[
                     self.games['id'].isin(slotsWithinCoachOverlap['game_id'])]
+
                 # Get all teams from games withing coach overlap
                 teamsWithGamesInCoachOverlap = pd.concat(
                     [gamesWithinCoachOverlap.team1_id, gamesWithinCoachOverlap.team2_id])
-                # coachesWithGamesInCoachOverlap = gamesWithinCoachOverlap.coach_id
 
                 # get all unscheduled games minus the teams with games in time bubble
                 gamesWithTeamsWithGamesOutsideTimeBubble = unscheduledGamesInLeague[
@@ -230,11 +258,11 @@ class gameGenerator_df():
 
                         if self.scheduleGame_df(slot, slotIndex, game, gameIndex, teamsWithGamesInCoachOverlap):
                             if self.DEBUG: print('***** GAME SCHEDULED *****')
-                            print('-----------------------------------------------------------------------------------')
-                            print('NUMBER GAMES UNSCHEDULED: ' + str(
-                                len(self.games) - len(self.slots.query('not game_id.isnull()'))))
-                            print('NUMBER SLOTS UNSCHEDULED: ' + str(len(self.slots.query('game_id.isnull()'))))
-                            print('-----------------------------------------------------------------------------------')
+                            # print('-----------------------------------------------------------------------------------')
+                            # print('NUMBER GAMES UNSCHEDULED: ' + str(
+                            #     len(self.games) - len(self.slots.query('not game_id.isnull()'))))
+                            # print('NUMBER SLOTS UNSCHEDULED: ' + str(len(self.slots.query('game_id.isnull()'))))
+                            # print('-----------------------------------------------------------------------------------')
                             break
 
         elapsed_time = time.time() - t
@@ -268,7 +296,34 @@ class gameGenerator_df():
         Compatible = True
 
         ## Need to check that each team has the same number of rest days since last game - Majors Only
-        CHECKRESTDAYS = False
+        CHECKRESTDAYS = True
+        ## TODO: This is not working
+        if CHECKRESTDAYS and (game.league_id == 1 or game.league_id == 2 or game.league_id == 3) :
+            ## find the latest previously scheduled game
+            earlierGamesTeam1 = scheduledGamesWithTeam1[scheduledGamesWithTeam1.time < slot.time].sort_values('time')
+            print(earlierGamesTeam1)
+            if len(earlierGamesTeam1)>0:
+                team1MostRecentGame = earlierGamesTeam1.iloc[len(earlierGamesTeam1)-1]
+                # team1MostRecentGame = earlierGamesTeam1.tail
+                team1RestTime = slot.time - team1MostRecentGame.time
+            else:
+                team1RestTime = timedelta(days=10)
+            earlierGamesTeam2 = scheduledGamesWithTeam2[scheduledGamesWithTeam2.time < slot.time].sort_values('time')
+            print(earlierGamesTeam2)
+            if len(earlierGamesTeam2) > 0:
+                team2MostRecentGame = earlierGamesTeam2.iloc[len(earlierGamesTeam2) - 1]
+                # team2MostRecentGame = earlierGamesTeam2.tail
+                team2RestTime = slot.time - team2MostRecentGame.time
+            else:
+                team2RestTime = timedelta(days=10)
+            if (team1RestTime.days >= 2 and team2RestTime.days >=2) or (team1RestTime.days <= 2 and team2RestTime.days <=2):
+                Compatible = True
+                print('Teams have equal rest time: ' + str(team1RestTime) + ' ' + str(team2RestTime))
+            else:
+                print('Teams do not have equal rest time: ' + str(team1RestTime) + ' ' + str(team2RestTime))
+                Compatible = False
+                return False
+
 
         ## CHECK LEAGUE COMPATIBILITY - THIS IS A LITTLE BIT OF A HACK SINCE MANYTOMANY FIELDS DON'T TRANSLATE TO DF
         ## NEED TO CHECK THE FIELD_ID AGAINST THE DJANGO OBJECT
@@ -409,25 +464,21 @@ class gameGenerator_df():
         ## MAX OF GAMES PER WEEK
         CHECKMAXGAMESPERWEEK = True
         if CHECKMAXGAMESPERWEEK:
-            print('')
-            GamesThisWeekforTeam1 = []
-            GamesThisWeekforTeam2 = []
             weekStart = slot.time - timedelta(days=slot.time.weekday(), hours=slot.time.hour, minutes=slot.time.minute)
             weekEnd = weekStart + timedelta(days=7)
             GamesThisWeekforTeam1 = scheduledGamesWithTeam1[
-                (scheduledGamesWithTeam1['time'] >= weekStart) & (scheduledGamesWithTeam2['time'] <= weekEnd)]
+                (scheduledGamesWithTeam1['time'] >= weekStart) & (scheduledGamesWithTeam1['time'] <= weekEnd)]
             GamesThisWeekforTeam2 = scheduledGamesWithTeam2[
                 (scheduledGamesWithTeam2['time'] >= weekStart) & (scheduledGamesWithTeam2['time'] <= weekEnd)]
             if len(GamesThisWeekforTeam1) >= 3 or len(GamesThisWeekforTeam2) >= 3:
                 Compatible = False
-                if self.DEBUG: print('A Team already has 3 games scheduled this week')
+                if self.DEBUG: print(
+                    'Team over weekly max game limit of 3 :' + str(len(GamesThisWeekforTeam1)) + " " + str(
+                        len(GamesThisWeekforTeam2)))
                 return False
-            if self.DEBUG: print('Both teams under max game limit of 3 :' + str(len(GamesThisWeekforTeam1)) + " " + str(
-                len(GamesThisWeekforTeam2)))
-
-            # for game in scheduledGamesWithTeam1:
-            #     if game.time > weekStart and game.time < weekStart
-            #         scheduledGamesWithTeam2
+            if self.DEBUG: print(
+                'Both teams under weekly max game limit of 3 :' + str(len(GamesThisWeekforTeam1)) + " " + str(
+                    len(GamesThisWeekforTeam2)))
 
         ## ENSURE THAT EITHER COACH OF GAME DOESN'T HAVE A GAME WITHIN 45 MIN OF START OR END TIME
         CHECKCOACHOVERLAP = True
@@ -456,8 +507,15 @@ class gameGenerator_df():
             if self.DEBUG: print(Game.objects.all().filter(pk=game.id)[0])
             if self.DEBUG: print('SLOT: ')
             if self.DEBUG: print(Slot.objects.all().filter(pk=slotIndex)[0])
+            print('-----------------------------------------------------------------------------------')
+            print('NUMBER GAMES UNSCHEDULED: ' + str(
+                len(self.games) - len(self.slots.query('not game_id.isnull()'))))
+            print('NUMBER SLOTS UNSCHEDULED: ' + str(len(self.slots.query('game_id.isnull()'))))
+            print('-----------------------------------------------------------------------------------')
+
             self.slots.at[slotIndex, 'game_id'] = game.id
             self.updateGameScores_df(game)
+
             return True
         else:
             if self.DEBUG: print('GAME NOT COMPATIBLE: ' + str(game.id))

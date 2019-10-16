@@ -25,7 +25,7 @@
         {% for coach in coaches %}
             <tr>
                 <td>
-                    <a href="{% url 'coaches' coach.pk %}">{{ coach.firstName}} {{ coach.lastName}}</a>
+                    <a href="{% url 'coaches' coach.pk %}">{{ coach.firstName }} {{ coach.lastName }}</a>
                 </td>
             </tr>
         {% endfor %}
