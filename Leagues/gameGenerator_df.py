@@ -251,7 +251,7 @@ class gameGenerator_df():
                 for gameIndex, game in unscheduledGamesSortedByLowestScore.iterrows():
                     # ensure that the game is not already scheduled - this shouldn't happen but it is good to check
                     print('---------------------------------------------------')
-                    print("Attempting to schedule game " + str(g_ind) + " of " + str(
+                    print("Attempting to schedule game " + str(g_ind+1) + " of " + str(
                         len(unscheduledGamesSortedByLowestScore)))
                     g_ind = g_ind + 1
                     if len(self.slots[self.slots.game_id == game.id]) == 0:
@@ -301,21 +301,25 @@ class gameGenerator_df():
         if CHECKRESTDAYS and (game.league_id == 1 or game.league_id == 2 or game.league_id == 3) :
             ## find the latest previously scheduled game
             earlierGamesTeam1 = scheduledGamesWithTeam1[scheduledGamesWithTeam1.time < slot.time].sort_values('time')
+            laterGamesTeam1 = scheduledGamesWithTeam1[scheduledGamesWithTeam1.time > slot.time].sort_values('time')
             print(earlierGamesTeam1)
+            print(laterGamesTeam1)
             if len(earlierGamesTeam1)>0:
                 team1MostRecentGame = earlierGamesTeam1.iloc[len(earlierGamesTeam1)-1]
-                # team1MostRecentGame = earlierGamesTeam1.tail
                 team1RestTime = slot.time - team1MostRecentGame.time
             else:
                 team1RestTime = timedelta(days=10)
+
             earlierGamesTeam2 = scheduledGamesWithTeam2[scheduledGamesWithTeam2.time < slot.time].sort_values('time')
+            laterGamesTeam2 = scheduledGamesWithTeam2[scheduledGamesWithTeam2.time > slot.time].sort_values('time')
             print(earlierGamesTeam2)
+            print(laterGamesTeam2)
             if len(earlierGamesTeam2) > 0:
                 team2MostRecentGame = earlierGamesTeam2.iloc[len(earlierGamesTeam2) - 1]
-                # team2MostRecentGame = earlierGamesTeam2.tail
                 team2RestTime = slot.time - team2MostRecentGame.time
             else:
                 team2RestTime = timedelta(days=10)
+
             if (team1RestTime.days >= 2 and team2RestTime.days >=2) or (team1RestTime.days <= 2 and team2RestTime.days <=2):
                 Compatible = True
                 print('Teams have equal rest time: ' + str(team1RestTime) + ' ' + str(team2RestTime))
