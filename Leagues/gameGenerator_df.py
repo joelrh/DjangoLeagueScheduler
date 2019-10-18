@@ -111,159 +111,163 @@ class gameGenerator_df():
             s_ind = 0
             for slotIndex, slot in slots.iterrows():
 
-                # if slot.time.weekday() == 4:
-                #     print('')
 
-                # This query only gets unscheduled games that are compatible with the field in the slot, randomizes them,
-                # and sorts them by score (low -> high).  Randomizing helps prevent duplication between runs.
+                for leaguePreference in ['PRIMARY','SECONDARY']:
+                    if slot.game_id == None:
+                        #     print('')
 
-                # gets all unscheduled games
-                unscheduledGames = self.games[
-                    ~self.games['id'].isin(self.slots.query('not game_id.isnull()')['game_id'])]
+                        # This query only gets unscheduled games that are compatible with the field in the slot, randomizes them,
+                        # and sorts them by score (low -> high).  Randomizing helps prevent duplication between runs.
 
-                # finds the leagues that the field is compatible with
-                # THIS IS A LITTLE BIT OF A HACK SINCE MANYTOMANY FIELDS DON'T TRANSLATE TO DF
-                # TODO: I don't think this is working
-                # leagues = League.objects.all().filter(field__pk=slot.field_id)
-                leagues_str = []
+                        # gets all unscheduled games
+                        unscheduledGames = self.games[
+                            ~self.games['id'].isin(self.slots.query('not game_id.isnull()')['game_id'])]
 
-                slot_ = Slot.objects.all().filter(pk=slotIndex)
+                        # finds the leagues that the field is compatible with
+                        # THIS IS A LITTLE BIT OF A HACK SINCE MANYTOMANY FIELDS DON'T TRANSLATE TO DF
+                        # TODO: I don't think this is working
+                        # leagues = League.objects.all().filter(field__pk=slot.field_id)
+                        leagues_str = []
 
-                print('-----------------------------------------------')
-                print("Scheduling Slot: " + str(s_ind) + " of " + str(len(slots)))
-                print("Scheduling for a: " + slot.time.strftime("%A"))
-                print(slot_[0])
-                s_ind = s_ind + 1
+                        slot_ = Slot.objects.all().filter(pk=slotIndex)
 
-                teamsWithGamesInTimeBubble = []
+                        print('-----------------------------------------------')
+                        print("Scheduling Slot: " + str(s_ind) + " of " + str(len(slots)))
+                        print("Scheduling for a: " + slot.time.strftime("%A"))
+                        print(slot_[0])
+                        s_ind = s_ind + 1
 
-                # Order of preference is not kept when loading the slots - need a "primary" and "secondary" preference field
-                # finds the leagues that the slot is compatible with
-                if not useSecondaryLeague:
-                    # leagues = League.objects.all().filter(primaryLeague__pk=slotIndex)
-                    leagues_str = []
-                    leagues = []
-                    print('scheduling with PRIMARY slot league preference')
-                    leagues_str.append(slot_[0].primaryLeague.pk)
-                    leagues.append(slot_[0].primaryLeague)
-                else:
-                    # leagues = League.objects.all().filter(secondaryLeague__pk=slotIndex)
-                    leagues_str = []
-                    leagues = []
-                    print('scheduling with PRIMARY and SECONDARY slot league preference')
-                    leagues_str.append(slot_[0].primaryLeague.pk)
-                    leagues.append(slot_[0].primaryLeague)
-                    for league in slot_[0].secondaryLeague.all():
-                        leagues_str.append(league.pk)
-                        leagues.append(league)
+                        teamsWithGamesInTimeBubble = []
 
-                print("leagues:" + str(leagues_str))
+                        # Order of preference is not kept when loading the slots - need a "primary" and "secondary" preference field
+                        # finds the leagues that the slot is compatible with
+                        ## TODO: The approach should be to append the secondary games on top of the primary games in teh same check
+                        if leaguePreference=='PRIMARY':
+                            # leagues = League.objects.all().filter(primaryLeague__pk=slotIndex)
+                            leagues_str = []
+                            leagues = []
+                            print('scheduling with PRIMARY slot league preference')
+                            leagues_str.append(slot_[0].primaryLeague.pk)
+                            leagues.append(slot_[0].primaryLeague)
+                        else:
+                            # leagues = League.objects.all().filter(secondaryLeague__pk=slotIndex)
+                            leagues_str = []
+                            leagues = []
+                            print('scheduling with PRIMARY and SECONDARY slot league preference')
+                            leagues_str.append(slot_[0].primaryLeague.pk)
+                            leagues.append(slot_[0].primaryLeague)
+                            for league in slot_[0].secondaryLeague.all():
+                                leagues_str.append(league.pk)
+                                leagues.append(league)
 
-                # removes games not compatible with the slot
-                unscheduledGamesInLeague = unscheduledGames[unscheduledGames['league_id'].isin(leagues_str)]
+                        print("leagues:" + str(leagues_str))
 
-                # removes games that can't be scheduled due to MAX games or MAX late games
-                unscheduledGamesInLeague = unscheduledGamesInLeague.loc[(unscheduledGamesInLeague['score'] != 9999999)]
+                        # removes games not compatible with the slot
+                        unscheduledGamesInLeague = unscheduledGames[unscheduledGames['league_id'].isin(leagues_str)]
 
-                print("Unscheduled games compatible with slot:" + str(len(unscheduledGamesInLeague)))
+                        # removes games that can't be scheduled due to MAX games or MAX late games
+                        unscheduledGamesInLeague = unscheduledGamesInLeague.loc[(unscheduledGamesInLeague['score'] != 9999999)]
 
-                # Get all unscheduled slots
-                scheduledSlots = self.slots.query('not game_id.isnull()')
+                        print("Unscheduled games compatible with slot:" + str(len(unscheduledGamesInLeague)))
 
-                # ENFORCE "DAYS BETWEEN" RULE
-                # This will limit the sub-checks by just checking for compatible league days-between limits
-                DAYSBETWEEN = True
-                # leagues = League.objects.all().filter(field__pk=slot.field_id)
-                # TODO: Should loop through compatible leagues instead of find minimum days between so tehre are no double checks
-                minDaysBetween = 9
-                for league in leagues:
-                    minDaysBetween = min(league.daysBetween, minDaysBetween)
-                print("min days between games for leagues in this slot: " + str(minDaysBetween))
+                        # Get all unscheduled slots
+                        scheduledSlots = self.slots.query('not game_id.isnull()')
 
-                teamsWithGamesInTimeBubble = []
-                teamsWithGamesOnSameDay = []
-                if DAYSBETWEEN and minDaysBetween > 0:
-                    # Get all slots within time bubble - these are games within the "days Between" limitation
-                    minDate = slot.time - timedelta(days=minDaysBetween) + timedelta(hours=24 - slot.time.hour)
-                    maxDate = slot.time + timedelta(days=minDaysBetween) - timedelta(hours=slot.time.hour)
-                    print("slot Date:    " + slot.time.strftime("%m/%d/%Y, %H:%M"))
-                    print("minimum Date: " + minDate.strftime("%m/%d/%Y, %H:%M"))
-                    print("maximum Date: " + maxDate.strftime("%m/%d/%Y, %H:%M"))
-                    slotsWithinTimeBubble = scheduledSlots[(scheduledSlots['time'] > minDate) &
-                                                           (scheduledSlots['time'] < maxDate)]
+                        # ENFORCE "DAYS BETWEEN" RULE
+                        # This will limit the sub-checks by just checking for compatible league days-between limits
+                        DAYSBETWEEN = True
+                        # leagues = League.objects.all().filter(field__pk=slot.field_id)
+                        # TODO: Should loop through compatible leagues instead of find minimum days between so tehre are no double checks
+                        minDaysBetween = 9
+                        for league in leagues:
+                            minDaysBetween = min(league.daysBetween, minDaysBetween)
+                        print("min days between games for leagues in this slot: " + str(minDaysBetween))
 
-                    print("num slots within time bubble: " + str(len(slotsWithinTimeBubble)))
+                        teamsWithGamesInTimeBubble = []
+                        teamsWithGamesOnSameDay = []
+                        if DAYSBETWEEN and minDaysBetween > 0:
+                            # Get all slots within time bubble - these are games within the "days Between" limitation
+                            minDate = slot.time - timedelta(days=minDaysBetween) + timedelta(hours=24 - slot.time.hour)
+                            maxDate = slot.time + timedelta(days=minDaysBetween) - timedelta(hours=slot.time.hour)
+                            print("slot Date:    " + slot.time.strftime("%m/%d/%Y, %H:%M"))
+                            print("minimum Date: " + minDate.strftime("%m/%d/%Y, %H:%M"))
+                            print("maximum Date: " + maxDate.strftime("%m/%d/%Y, %H:%M"))
+                            slotsWithinTimeBubble = scheduledSlots[(scheduledSlots['time'] > minDate) &
+                                                                   (scheduledSlots['time'] < maxDate)]
 
-                    # Get all games from slots within time bubble
-                    gamesWithinTimeBubble = self.games[
-                        self.games['id'].isin(slotsWithinTimeBubble['game_id'])]
-                    print("num games within time bubble: " + str(len(gamesWithinTimeBubble)))
+                            print("num slots within time bubble: " + str(len(slotsWithinTimeBubble)))
 
-                    # Get all teams from games withing time bubble
-                    teamsWithGamesInTimeBubble = pd.concat(
-                        [gamesWithinTimeBubble.team1_id, gamesWithinTimeBubble.team2_id])
-                    print("num teams within time bubble: " + str(len(teamsWithGamesInTimeBubble)))
-                else:
-                    print()
-                    print()
-                    print()
-                    # ENFORCE "1 GAME / DAY RULE" RULE
-                    # Get all slots within time bubble - these are games within the "days Between" limitation
-                    # TODO: Change this to date instead of day all over this function
-                    slotsonSameDay = scheduledSlots[pd.to_datetime(scheduledSlots.time).dt.day == slot.time.day]
-                    print("num scheduled slots on same day: " + str(len(slotsonSameDay)))
-                    # Get all games from slots within time bubble
-                    gamesOnSameDay = self.games[
-                        self.games['id'].isin(slotsonSameDay['game_id'])]
-                    print("num games on same day: " + str(len(gamesOnSameDay)))
-                    # Get all teams from games withing time bubble
-                    teamsWithGamesOnSameDay = pd.concat(
-                        [gamesOnSameDay.team1_id, gamesOnSameDay.team2_id])
-                    print("num teams on same day: " + str(len(teamsWithGamesOnSameDay)))
+                            # Get all games from slots within time bubble
+                            gamesWithinTimeBubble = self.games[
+                                self.games['id'].isin(slotsWithinTimeBubble['game_id'])]
+                            print("num games within time bubble: " + str(len(gamesWithinTimeBubble)))
 
-                # ENFORCE COACH OVERLAP RULE
-                # Get all slots within coach overlap bubble
-                # TODO:  need to fix time before start and time after end - use gameDuration
-                slotsWithinCoachOverlap = scheduledSlots[
-                    (scheduledSlots['time'] < slot.time + timedelta(minutes=self.coachOverlapTime + 120)) & (
-                            scheduledSlots['time'] > slot.time - timedelta(minutes=self.coachOverlapTime + 120))]
+                            # Get all teams from games withing time bubble
+                            teamsWithGamesInTimeBubble = pd.concat(
+                                [gamesWithinTimeBubble.team1_id, gamesWithinTimeBubble.team2_id])
+                            print("num teams within time bubble: " + str(len(teamsWithGamesInTimeBubble)))
+                        else:
+                            print()
+                            print()
+                            print()
+                            # ENFORCE "1 GAME / DAY RULE" RULE
+                            # Get all slots within time bubble - these are games within the "days Between" limitation
+                            # TODO: Change this to date instead of day all over this function
+                            slotsonSameDay = scheduledSlots[pd.to_datetime(scheduledSlots.time).dt.day == slot.time.day]
+                            print("num scheduled slots on same day: " + str(len(slotsonSameDay)))
+                            # Get all games from slots within time bubble
+                            gamesOnSameDay = self.games[
+                                self.games['id'].isin(slotsonSameDay['game_id'])]
+                            print("num games on same day: " + str(len(gamesOnSameDay)))
+                            # Get all teams from games withing time bubble
+                            teamsWithGamesOnSameDay = pd.concat(
+                                [gamesOnSameDay.team1_id, gamesOnSameDay.team2_id])
+                            print("num teams on same day: " + str(len(teamsWithGamesOnSameDay)))
 
-                # Get all games from slots coach overlap bubble
-                gamesWithinCoachOverlap = self.games[
-                    self.games['id'].isin(slotsWithinCoachOverlap['game_id'])]
+                        # ENFORCE COACH OVERLAP RULE
+                        # Get all slots within coach overlap bubble
+                        # TODO:  need to fix time before start and time after end - use gameDuration
+                        slotsWithinCoachOverlap = scheduledSlots[
+                            (scheduledSlots['time'] < slot.time + timedelta(minutes=self.coachOverlapTime + 120)) & (
+                                    scheduledSlots['time'] > slot.time - timedelta(minutes=self.coachOverlapTime + 120))]
 
-                # Get all teams from games withing coach overlap
-                teamsWithGamesInCoachOverlap = pd.concat(
-                    [gamesWithinCoachOverlap.team1_id, gamesWithinCoachOverlap.team2_id])
+                        # Get all games from slots coach overlap bubble
+                        gamesWithinCoachOverlap = self.games[
+                            self.games['id'].isin(slotsWithinCoachOverlap['game_id'])]
 
-                # get all unscheduled games minus the teams with games in time bubble
-                gamesWithTeamsWithGamesOutsideTimeBubble = unscheduledGamesInLeague[
-                    (~unscheduledGamesInLeague['team1_id'].isin(teamsWithGamesInTimeBubble)) &
-                    (~unscheduledGamesInLeague['team2_id'].isin(teamsWithGamesInTimeBubble)) &
-                    (~unscheduledGamesInLeague['team1_id'].isin(teamsWithGamesOnSameDay)) &
-                    (~unscheduledGamesInLeague['team2_id'].isin(teamsWithGamesOnSameDay))]
-                print("num games outside restrictions: " + str(len(gamesWithTeamsWithGamesOutsideTimeBubble)))
+                        # Get all teams from games withing coach overlap
+                        teamsWithGamesInCoachOverlap = pd.concat(
+                            [gamesWithinCoachOverlap.team1_id, gamesWithinCoachOverlap.team2_id])
 
-                # randomize list of games and sort by score
-                unscheduledGamesInLeague = gamesWithTeamsWithGamesOutsideTimeBubble.sample(frac=1)
-                unscheduledGamesSortedByLowestScore = unscheduledGamesInLeague.sort_values('score')
-                g_ind = 0
-                for gameIndex, game in unscheduledGamesSortedByLowestScore.iterrows():
-                    # ensure that the game is not already scheduled - this shouldn't happen but it is good to check
-                    print('---------------------------------------------------')
-                    print("Attempting to schedule game " + str(g_ind+1) + " of " + str(
-                        len(unscheduledGamesSortedByLowestScore)))
-                    g_ind = g_ind + 1
-                    if len(self.slots[self.slots.game_id == game.id]) == 0:
+                        # get all unscheduled games minus the teams with games in time bubble
+                        gamesWithTeamsWithGamesOutsideTimeBubble = unscheduledGamesInLeague[
+                            (~unscheduledGamesInLeague['team1_id'].isin(teamsWithGamesInTimeBubble)) &
+                            (~unscheduledGamesInLeague['team2_id'].isin(teamsWithGamesInTimeBubble)) &
+                            (~unscheduledGamesInLeague['team1_id'].isin(teamsWithGamesOnSameDay)) &
+                            (~unscheduledGamesInLeague['team2_id'].isin(teamsWithGamesOnSameDay))]
+                        print("num games outside restrictions: " + str(len(gamesWithTeamsWithGamesOutsideTimeBubble)))
 
-                        if self.scheduleGame_df(slot, slotIndex, game, gameIndex, teamsWithGamesInCoachOverlap):
-                            if self.DEBUG: print('***** GAME SCHEDULED *****')
-                            # print('-----------------------------------------------------------------------------------')
-                            # print('NUMBER GAMES UNSCHEDULED: ' + str(
-                            #     len(self.games) - len(self.slots.query('not game_id.isnull()'))))
-                            # print('NUMBER SLOTS UNSCHEDULED: ' + str(len(self.slots.query('game_id.isnull()'))))
-                            # print('-----------------------------------------------------------------------------------')
-                            break
+                        # randomize list of games and sort by score
+                        unscheduledGamesInLeague = gamesWithTeamsWithGamesOutsideTimeBubble.sample(frac=1)
+                        unscheduledGamesSortedByLowestScore = unscheduledGamesInLeague.sort_values('score')
+                        g_ind = 0
+                        for gameIndex, game in unscheduledGamesSortedByLowestScore.iterrows():
+                            # ensure that the game is not already scheduled - this shouldn't happen but it is good to check
+                            print('---------------------------------------------------')
+                            print("Attempting to schedule game " + str(g_ind+1) + " of " + str(
+                                len(unscheduledGamesSortedByLowestScore)))
+                            g_ind = g_ind + 1
+                            if len(self.slots[self.slots.game_id == game.id]) == 0:
+
+                                if self.scheduleGame_df(slot, slotIndex, game, gameIndex, teamsWithGamesInCoachOverlap):
+                                    if self.DEBUG: print('***** GAME SCHEDULED *****')
+                                    print('-----------------------------------------------------------------------------------')
+                                    print('NUMBER GAMES UNSCHEDULED: ' + str(
+                                        len(self.games) - len(self.slots.query('not game_id.isnull()'))))
+                                    print('NUMBER SLOTS UNSCHEDULED: ' + str(len(self.slots.query('game_id.isnull()'))))
+                                    print('-----------------------------------------------------------------------------------')
+                                    slot.game_id=0
+                                    break
 
         elapsed_time = time.time() - t
         if self.DEBUG: print('ELAPSED TIME:' + str(elapsed_time))
@@ -511,11 +515,11 @@ class gameGenerator_df():
             if self.DEBUG: print(Game.objects.all().filter(pk=game.id)[0])
             if self.DEBUG: print('SLOT: ')
             if self.DEBUG: print(Slot.objects.all().filter(pk=slotIndex)[0])
-            print('-----------------------------------------------------------------------------------')
-            print('NUMBER GAMES UNSCHEDULED: ' + str(
-                len(self.games) - len(self.slots.query('not game_id.isnull()'))))
-            print('NUMBER SLOTS UNSCHEDULED: ' + str(len(self.slots.query('game_id.isnull()'))))
-            print('-----------------------------------------------------------------------------------')
+            # print('-----------------------------------------------------------------------------------')
+            # print('NUMBER GAMES UNSCHEDULED: ' + str(
+            #     len(self.games) - len(self.slots.query('not game_id.isnull()'))))
+            # print('NUMBER SLOTS UNSCHEDULED: ' + str(len(self.slots.query('game_id.isnull()'))))
+            # print('-----------------------------------------------------------------------------------')
 
             self.slots.at[slotIndex, 'game_id'] = game.id
             self.updateGameScores_df(game)
