@@ -49,7 +49,7 @@ class gameGenerator_df():
         SCHEDULINGCOMPLETE = False
         while len(self.games[~self.games['id'].isin(self.slots.query('not game_id.isnull()')['game_id'])]) > 0 and \
                 len(self.slots.query('game_id.isnull()')) > 0 and \
-                numberRetried <= 6 and \
+                not numberRetried == 1 and \
                 not SCHEDULINGCOMPLETE:
 
             numberRetried = numberRetried + 1
@@ -72,7 +72,7 @@ class gameGenerator_df():
             # The third pass will go through and remove all scheduled games on underutilized days
             scheduledSlots = self.slots.query('not game_id.isnull()')
             unscheduledSlots = self.slots.query('game_id.isnull()')
-            # removeUnderUtilizedSlotDays=True
+            removeUnderUtilizedSlotDays=False
             if numberRetried == 3 and removeUnderUtilizedSlotDays:
                 for slotIndex, slot in self.slots.iterrows():
                     print(slot)
@@ -298,6 +298,10 @@ class gameGenerator_df():
         scheduledGamesWithTeam2 = scheduledSlots[scheduledSlots['game_id'].isin(gamesWithTeam2['id'])]
 
         Compatible = True
+
+        ## Need to check that no team gets more than one total extra game scheduled more than the minimum in the league
+        ## This should prevent an uneven number of games for teams in the same league
+        CHECKMINGAMEDELTA = False
 
         ## Need to check that each team has the same number of rest days since last game - Majors Only
         CHECKRESTDAYS = True
@@ -577,7 +581,7 @@ class gameGenerator_df():
         MORETHANMINIMUMLEAGUESCHEDULEPENALTY = False
         INTERDIVISIONALHANDICAP = True
         LOWERTHANAVERAGESCHEDULEPENALTY = False
-        COACHMUTLIPLETEAMHANDICAP = True
+        COACHMUTLIPLETEAMHANDICAP = False
 
         score = 0
 
@@ -638,7 +642,7 @@ class gameGenerator_df():
             if len(scheduledGamesWithTeams) < averageScheduledGamesInLeaguePerTeam:
                 score = score - ((averageScheduledGamesInLeaguePerTeam - len(scheduledGamesWithTeams)) * 100)
 
-        # Account for Hanidcap if needed
+        # Account for Handicap if needed
         score = score + game.handicap
 
         self.games.ix[gameIndex, 'score'] = score
