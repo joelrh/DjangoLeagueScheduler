@@ -95,9 +95,9 @@ def generateGames():
         print('Max Games set for league')
         print(league.maxGames)
         doubleUp = False
-        if len(Team.objects.all().filter(league=league.id)) <= league.maxGames+1:
+        # if len(Team.objects.all().filter(league=league.id)) <= league.maxGames+1:
 
-            doubleUp = True
+        #     doubleUp = True
 
         for team1 in teams:
             for team2 in teams:
