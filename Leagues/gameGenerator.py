@@ -21,7 +21,7 @@ def importData():
     # IMPORT COACHES
     Coach.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'firstName', 'lastName'])
-    my_dataset.xlsx = open('data\9-29-19_data\Coach-2019-09-29.xlsx', 'rb').read()
+    my_dataset.xlsx = open('data\TT\Coach-2020.xlsx', 'rb').read()
     print(my_dataset)
     slot_resource = resources.modelresource_factory(model=Coach)()
     slot_resource.import_data(my_dataset, dry_run=False)
@@ -30,7 +30,7 @@ def importData():
     League.objects.all().delete()
     my_dataset = tablib.Dataset(
         headers=['id', 'name', 'abbreviation', 'description', 'maxLateGames', 'maxGames', 'gameDuration','daysBetween'])
-    my_dataset.xlsx = open('data\9-29-19_data\League-2019-09-29-mod.xlsx', 'rb').read()
+    my_dataset.xlsx = open('data\TT\League-2020.xlsx', 'rb').read()
     print(my_dataset)
     division_resource = resources.modelresource_factory(model=League)()
     division_resource.import_data(my_dataset, dry_run=False)
@@ -38,7 +38,7 @@ def importData():
     # IMPORT DIVISIONS
     Division.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'name', 'abbreviation', 'description', 'league'])
-    my_dataset.xlsx = open('data\9-29-19_data\Division-2019-09-29-mod.xlsx', 'rb').read()
+    my_dataset.xlsx = open('data\TT\Division-2020.xlsx', 'rb').read()
     print(my_dataset)
     division_resource = resources.modelresource_factory(model=Division)()
     division_resource.import_data(my_dataset, dry_run=False)
@@ -46,7 +46,7 @@ def importData():
     # IMPORT TEAMS
     Team.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'name', 'description', 'league', 'division', 'coach'])
-    my_dataset.xlsx = open('data\9-29-19_data\Team-2019-09-29-mod.xlsx', 'rb').read()
+    my_dataset.xlsx = open('data\TT\Team-2020.xlsx', 'rb').read()
     print(my_dataset)
     team_resource = resources.modelresource_factory(model=Team)()
     team_resource.import_data(my_dataset, dry_run=False)
@@ -54,7 +54,7 @@ def importData():
     # IMPORT FIELDS
     Field.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'name', 'description', 'league'])
-    my_dataset.xlsx = open('data\9-29-19_data\Field-2019-09-29-mod.xlsx', 'rb').read()
+    my_dataset.xlsx = open('data\TT\Field-2020.xlsx', 'rb').read()
     print(my_dataset)
     field_resource = resources.modelresource_factory(model=Field)()
     field_resource.import_data(my_dataset, dry_run=False)
@@ -62,7 +62,7 @@ def importData():
     # IMPORT SLOTS
     slots = Slot.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'field', 'primaryLeague', 'secondaryLeague', 'game', 'time', 'duration'])
-    my_dataset.xlsx = open('data\9-29-19_data\Slot-2019-09-29-mod.xlsx', 'rb').read()
+    my_dataset.xlsx = open('data\TT\Slot-2020.xlsx', 'rb').read()
     print(my_dataset)
     slot_resource = resources.modelresource_factory(model=Slot)()
     slot_resource.import_data(my_dataset, dry_run=False)
