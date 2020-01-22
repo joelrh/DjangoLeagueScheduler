@@ -7,6 +7,7 @@ import tablib
 from django.db import connection
 from import_export import resources
 import numpy as np
+import math
 
 
 class gameGenerator_df():
@@ -99,21 +100,23 @@ class gameGenerator_df():
 
             slots = self.slots.query('game_id.isnull()')
 
+
             RANDOMIZESLOTS = False
             if RANDOMIZESLOTS:
                 slots = slots.sample(frac=1)
 
             # TODO: Need to find the optimal score based on num slots available for each league - something nice to compare optimization
-
             # TODO: Need to order the slots in a way that favors younger leagues for earlier slots
 
             # Iterate through every slot and try to schedule the most deserving, compatible game
             s_ind = 0
             for slotIndex, slot in slots.iterrows():
-
+                s_ind = s_ind + 1
 
                 for leaguePreference in ['PRIMARY','SECONDARY']:
-                    if slot.game_id == None:
+                    if leaguePreference == 'SECONDARY':
+                        print('test')
+                    if slot.game_id == None or math.isnan(slot.game_id):
                         #     print('')
 
                         # This query only gets unscheduled games that are compatible with the field in the slot, randomizes them,
@@ -135,14 +138,15 @@ class gameGenerator_df():
                         print("Scheduling Slot: " + str(s_ind) + " of " + str(len(slots)))
                         print("Scheduling for a: " + slot.time.strftime("%A"))
                         print(slot_[0])
-                        s_ind = s_ind + 1
+
 
                         teamsWithGamesInTimeBubble = []
 
                         # Order of preference is not kept when loading the slots - need a "primary" and "secondary" preference field
                         # finds the leagues that the slot is compatible with
-                        ## TODO: The approach should be to append the secondary games on top of the primary games in teh same check
-                        if leaguePreference=='PRIMARY':
+                        ## TODO: The approach should be to append the secondary games on top of the primary games in the same check
+                        USE_SECONDARY = True
+                        if leaguePreference=='PRIMARY' or not USE_SECONDARY:
                             # leagues = League.objects.all().filter(primaryLeague__pk=slotIndex)
                             leagues_str = []
                             leagues = []
@@ -169,6 +173,9 @@ class gameGenerator_df():
                         unscheduledGamesInLeague = unscheduledGamesInLeague.loc[(unscheduledGamesInLeague['score'] != 9999999)]
 
                         print("Unscheduled games compatible with slot:" + str(len(unscheduledGamesInLeague)))
+                        print(unscheduledGamesInLeague)
+
+
 
                         # Get all unscheduled slots
                         scheduledSlots = self.slots.query('not game_id.isnull()')
@@ -196,16 +203,20 @@ class gameGenerator_df():
                                                                    (scheduledSlots['time'] < maxDate)]
 
                             print("num slots within time bubble: " + str(len(slotsWithinTimeBubble)))
+                            print(slotsWithinTimeBubble)
+                            
 
                             # Get all games from slots within time bubble
                             gamesWithinTimeBubble = self.games[
                                 self.games['id'].isin(slotsWithinTimeBubble['game_id'])]
                             print("num games within time bubble: " + str(len(gamesWithinTimeBubble)))
+                            print(gamesWithinTimeBubble)
 
                             # Get all teams from games withing time bubble
                             teamsWithGamesInTimeBubble = pd.concat(
                                 [gamesWithinTimeBubble.team1_id, gamesWithinTimeBubble.team2_id])
                             print("num teams within time bubble: " + str(len(teamsWithGamesInTimeBubble)))
+                            print(teamsWithGamesInTimeBubble.values)
                         else:
                             print()
                             print()
@@ -215,14 +226,17 @@ class gameGenerator_df():
                             # TODO: Change this to date instead of day all over this function
                             slotsonSameDay = scheduledSlots[pd.to_datetime(scheduledSlots.time).dt.day == slot.time.day]
                             print("num scheduled slots on same day: " + str(len(slotsonSameDay)))
+                            print(slotsonSameDay)
                             # Get all games from slots within time bubble
                             gamesOnSameDay = self.games[
                                 self.games['id'].isin(slotsonSameDay['game_id'])]
                             print("num games on same day: " + str(len(gamesOnSameDay)))
+                            print(gamesOnSameDay)
                             # Get all teams from games withing time bubble
                             teamsWithGamesOnSameDay = pd.concat(
                                 [gamesOnSameDay.team1_id, gamesOnSameDay.team2_id])
                             print("num teams on same day: " + str(len(teamsWithGamesOnSameDay)))
+                            print(teamsWithGamesOnSameDay.values)
 
                         # ENFORCE COACH OVERLAP RULE
                         # Get all slots within coach overlap bubble
@@ -246,6 +260,7 @@ class gameGenerator_df():
                             (~unscheduledGamesInLeague['team1_id'].isin(teamsWithGamesOnSameDay)) &
                             (~unscheduledGamesInLeague['team2_id'].isin(teamsWithGamesOnSameDay))]
                         print("num games outside restrictions: " + str(len(gamesWithTeamsWithGamesOutsideTimeBubble)))
+                        print(gamesWithTeamsWithGamesOutsideTimeBubble)
 
                         # randomize list of games and sort by score
                         unscheduledGamesInLeague = gamesWithTeamsWithGamesOutsideTimeBubble.sample(frac=1)
@@ -305,7 +320,7 @@ class gameGenerator_df():
 
         ## Need to check that each team has the same number of rest days since last game - Majors Only
         CHECKRESTDAYS = True
-        ## TODO: This is not working
+        ## TODO: This only works if the slots are scheduled in chronological order
         if CHECKRESTDAYS and (game.league_id == 1 or game.league_id == 2 or game.league_id == 3) :
             ## find the latest previously scheduled game
             earlierGamesTeam1 = scheduledGamesWithTeam1[scheduledGamesWithTeam1.time < slot.time].sort_values('time')
@@ -339,6 +354,10 @@ class gameGenerator_df():
         ## CHECK THAT A GAME IS NOT BEING SCHEDULED WHEN THERE IS A TEAM >= 1 LESS GAME - TO HELP LEVEL THINGS OUT
         ## NEEDS IMPLEMENTATION
         ## CAN GET AROUND THIS BY MANUALLY GENERATING THE GAMES THAT I WANT SCHEDULED - MUCH EASIER
+        CHECKLEAGUEGAMEDELTA=True
+        if CHECKLEAGUEGAMEDELTA:
+            print('test')
+
 
         ## CHECK LEAGUE COMPATIBILITY - THIS IS A LITTLE BIT OF A HACK SINCE MANYTOMANY FIELDS DON'T TRANSLATE TO DF
         ## NEED TO CHECK THE FIELD_ID AGAINST THE DJANGO OBJECT
@@ -507,9 +526,6 @@ class gameGenerator_df():
                     Compatible = False
                     if self.DEBUG: print('A Coach has another game scheduled too close to this slot')
                     return False
-
-        # ENSURE NO MORE THAN 2 GAMES PER WEEK
-        # THIS NEEDS IMPLEMENTATION
 
         scheduledSlots = self.slots.query('not game_id.isnull()')
         teamsinLeague = self.teams[self.teams['league_id'] == game.league_id]
