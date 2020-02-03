@@ -79,7 +79,17 @@ def importData():
     # new_time = datetime.utcfromtimestamp(1508265552).replace(minute=0, second=0, microsecond=0)
 
     # Generate all possible games
-    generateGames()
+    GENERATEGAMES = False
+    if GENERATEGAMES:
+        generateGames()
+    else:
+        # IMPORT GAMES
+        games = Game.objects.all().delete()
+        my_dataset = tablib.Dataset(headers=['id', 'team1', 'team2', 'league', 'score', 'enabled', 'complete'])
+        my_dataset.xlsx = open('data\TT\Game-2020.xlsx', 'rb').read()
+        print(my_dataset)
+        game_resource = resources.modelresource_factory(model=Game)()
+        game_resource.import_data(my_dataset, dry_run=False)
 
 
 def generateGames():

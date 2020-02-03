@@ -109,13 +109,14 @@ class gameGenerator_df():
             # TODO: Need to order the slots in a way that favors younger leagues for earlier slots
 
             # Iterate through every slot and try to schedule the most deserving, compatible game
+
             s_ind = 0
+            USE_SECONDARY = True
+
             for slotIndex, slot in slots.iterrows():
                 s_ind = s_ind + 1
 
                 for leaguePreference in ['PRIMARY','SECONDARY']:
-                    if leaguePreference == 'SECONDARY':
-                        print('test')
                     if slot.game_id == None or math.isnan(slot.game_id):
                         #     print('')
 
@@ -145,7 +146,7 @@ class gameGenerator_df():
                         # Order of preference is not kept when loading the slots - need a "primary" and "secondary" preference field
                         # finds the leagues that the slot is compatible with
                         ## TODO: The approach should be to append the secondary games on top of the primary games in the same check
-                        USE_SECONDARY = True
+
                         if leaguePreference=='PRIMARY' or not USE_SECONDARY:
                             # leagues = League.objects.all().filter(primaryLeague__pk=slotIndex)
                             leagues_str = []
@@ -320,6 +321,7 @@ class gameGenerator_df():
 
         ## Need to check that each team has the same number of rest days since last game - Majors Only
         CHECKRESTDAYS = True
+        restDayThreshold = 1
         ## TODO: This only works if the slots are scheduled in chronological order
         if CHECKRESTDAYS and (game.league_id == 1 or game.league_id == 2 or game.league_id == 3) :
             ## find the latest previously scheduled game
@@ -343,7 +345,7 @@ class gameGenerator_df():
             else:
                 team2RestTime = timedelta(days=10)
 
-            if (team1RestTime.days >= 2 and team2RestTime.days >=2) or (team1RestTime.days <= 2 and team2RestTime.days <=2):
+            if (team1RestTime.days >= restDayThreshold and team2RestTime.days >=restDayThreshold) or (team1RestTime.days <= restDayThreshold and team2RestTime.days <=restDayThreshold):
                 Compatible = True
                 print('Teams have equal rest time: ' + str(team1RestTime) + ' ' + str(team2RestTime))
             else:
@@ -497,6 +499,7 @@ class gameGenerator_df():
 
         ## MAX OF GAMES PER WEEK
         CHECKMAXGAMESPERWEEK = True
+        maxGamesPerWeek = 3
         if CHECKMAXGAMESPERWEEK:
             weekStart = slot.time - timedelta(days=slot.time.weekday(), hours=slot.time.hour, minutes=slot.time.minute)
             weekEnd = weekStart + timedelta(days=7)
@@ -504,7 +507,7 @@ class gameGenerator_df():
                 (scheduledGamesWithTeam1['time'] >= weekStart) & (scheduledGamesWithTeam1['time'] <= weekEnd)]
             GamesThisWeekforTeam2 = scheduledGamesWithTeam2[
                 (scheduledGamesWithTeam2['time'] >= weekStart) & (scheduledGamesWithTeam2['time'] <= weekEnd)]
-            if len(GamesThisWeekforTeam1) >= 3 or len(GamesThisWeekforTeam2) >= 3:
+            if len(GamesThisWeekforTeam1) >= maxGamesPerWeek or len(GamesThisWeekforTeam2) >= maxGamesPerWeek:
                 Compatible = False
                 if self.DEBUG: print(
                     'Team over weekly max game limit of 3 :' + str(len(GamesThisWeekforTeam1)) + " " + str(
@@ -608,7 +611,7 @@ class gameGenerator_df():
         if SCHEDULEDGAMEPENALTY:
             gameswithteams2 = gamesWithTeams[gamesWithTeams['id'].isin(scheduledGames['game_id'])]
             scheduledGamesWithTeams = scheduledGames[scheduledGames['game_id'].isin(gameswithteams2['id'])]
-            score = score + (len(scheduledGamesWithTeams) * 100)
+            score = score + (len(scheduledGamesWithTeams) * 20000)
 
         # HANDICAP REDUCED AS NUMBER OF UNSCHEDULED GAMES DECREASES
         if UNCHEDULEDGAMEHANDICAP:
