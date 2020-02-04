@@ -209,13 +209,15 @@ def displayStats():
             latestGame = slotsWithTeam.latest()
             numberOfGames = len(slotsWithTeam)
             timeBeteenGames = []
+            # avgTimeBetweenGames = []
             for slotIndex in range(numberOfGames-1,1,-1):
                 diff = slotsWithTeam[slotIndex].time - slotsWithTeam[slotIndex-1].time
 
                 timeBeteenGames.append(slotsWithTeam[slotIndex].time - slotsWithTeam[slotIndex-1].time)
-            minTimeBetweenGames = min(timeBeteenGames)
-            maxTimeBetweenGames = max(timeBeteenGames)
-            avgTimeBetweenGames = (latestGame.time-earliestGame.time)/numberOfGames
+            if (len(timeBeteenGames)>0):
+                minTimeBetweenGames = min(timeBeteenGames)
+                maxTimeBetweenGames = max(timeBeteenGames)
+                avgTimeBetweenGames = (latestGame.time-earliestGame.time)/numberOfGames
 
             earliestGame = datetime.datetime(earliestGame.time.year, earliestGame.time.month, earliestGame.time.day,
                                              earliestGame.time.hour, earliestGame.time.minute)
