@@ -1,6 +1,6 @@
 import sys
 
-from .models import League, Game, Field, Division, Team, Slot, SiteConfiguration
+from .models import League, Game, Field, Division, Team, Slot, BODate, SiteConfiguration
 import time
 from time import sleep
 from progress.bar import IncrementalBar
@@ -27,6 +27,8 @@ class gameGenerator_df():
         self.slots.set_index('id', inplace=True)
         self.fields = pd.read_sql_query(str(Field.objects.all().query), connection)
         # TODO: figure out why this doesn't work - it is much clearer to use the id as an index
+        self.BODate = pd.read_sql_query(str(BODate.objects.all().query), connection)
+        self.BODate.set_index('id', inplace=True)
         self.teams = pd.read_sql_query(str(Team.objects.all().query), connection)
         self.teams.set_index('id', inplace=True)
         self.leagues = pd.read_sql_query(str(Slot.objects.all().query), connection)
@@ -137,7 +139,7 @@ class gameGenerator_df():
             # Iterate through every slot and try to schedule the most deserving, compatible game
 
             s_ind = 0
-            USE_SECONDARY = True
+            USE_SECONDARY = False
 
             # manager = enlighten.get_manager()
             # pbar = manager.counter(total=len(slots), desc="Checking status", unit='members')
@@ -570,11 +572,33 @@ class gameGenerator_df():
                     if self.DEBUG: print('A Coach has another game scheduled too close to this slot')
                     return False
 
-        scheduledSlots = self.slots.query('not game_id.isnull()')
-        teamsinLeague = self.teams[self.teams['league_id'] == game.league_id]
-        numTeamsInLeague = len(teamsinLeague)
-        gamesinLeague = self.games[self.games['league_id'] == game.league_id]
-        scheduledGamesInLeague = scheduledSlots[scheduledSlots['game_id'].isin(gamesinLeague['id'])]
+        ## ENSURE THAT THE DATE DOES NOT CONFLICT WITH BLACKOUT DATES
+        CHECKBLACKOUTDATE = True
+        if CHECKBLACKOUTDATE:
+            slotDate = slot.time
+            # team1_blackoutDates = self.teams.ix[game.team1_id].boDate
+            # team2_blackoutDates = self.teams.ix[game.team2_id].boDate
+            for blackoutDate in Team.objects.all().filter(pk=game.team1_id)[0].boDate.all():
+                if slot.time.date().day == blackoutDate.date.day and slot.time.date().month == blackoutDate.date.month:
+                    Compatible = False
+                    if self.DEBUG: print('Day conflicts with Team 1 blackout dates')
+                    if self.DEBUG: print('slot    :  ' + str(slot.time.date()))
+                    if self.DEBUG: print('blackout:  ' + str(blackoutDate.date))
+                    return False
+            for blackoutDate in Team.objects.all().filter(pk=game.team2_id)[0].boDate.all():
+                if slot.time.date == blackoutDate.date:
+                    Compatible = False
+                    if self.DEBUG: print('Day conflicts with Team 2 blackout dates')
+                    if self.DEBUG: print('slot    :  ' + str(slot.time.date()))
+                    if self.DEBUG: print('blackout:  ' + str(blackoutDate.date))
+                    return False
+            if self.DEBUG: print('No blackout conflicts')
+
+        # scheduledSlots = self.slots.query('not game_id.isnull()')
+        # teamsinLeague = self.teams[self.teams['league_id'] == game.league_id]
+        # numTeamsInLeague = len(teamsinLeague)
+        # gamesinLeague = self.games[self.games['league_id'] == game.league_id]
+        # scheduledGamesInLeague = scheduledSlots[scheduledSlots['game_id'].isin(gamesinLeague['id'])]
 
         if Compatible:
             if self.DEBUG: print('SCHEDULING GAME: ' + str(game.id))
@@ -682,7 +706,7 @@ class gameGenerator_df():
         # INTERDIVISIONAL GAMES HAVE A HIGHER HANDICAP TO ENSURE THEY ARE SCHEDULED FIRST
         if INTERDIVISIONALHANDICAP:
             if self.teams.loc[game.team1_id]['division_id'] == self.teams.loc[game.team2_id]['division_id']:
-                score = score - 200
+                score = score - 400
 
         # TEAMS THAT HAVE COACHES WITH MORE THAN ONE TEAM GET PREFERENCE
         if COACHMUTLIPLETEAMHANDICAP:

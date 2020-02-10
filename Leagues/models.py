@@ -34,6 +34,8 @@ from django.db import models
 from django.db import models
 from solo.models import SingletonModel
 
+class BlackOutDate(models.Model):
+    date = models.DateField(null=True)
 
 class SiteConfiguration(models.Model):
     maxLateGames = models.IntegerField(null=True)
@@ -78,12 +80,20 @@ class Division(models.Model):
     def __str__(self):
         return self.name
 
+class BODate(models.Model):
+    date = models.DateTimeField(null=True)
+
+    # def __str__(self):
+    #     return self.date
+
+
 class Team(models.Model):
     name = models.CharField(max_length=20, null=False)
     description = models.TextField(blank=True, null=True)
     league = models.ForeignKey(League, on_delete=models.CASCADE)
     division = models.ForeignKey(Division, on_delete=models.CASCADE)  # , limit_choices_to={'league':league})
     coach = models.ForeignKey(Coach, on_delete=models.CASCADE, null=True)
+    boDate = models.ManyToManyField(BODate, null=True, related_name='boDate')
     #coach = models.ManyToManyField(Coach)
 
     def __str__(self):

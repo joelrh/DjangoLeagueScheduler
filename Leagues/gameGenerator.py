@@ -1,4 +1,4 @@
-from .models import League, Game, Field, Division, Team, Slot, Coach
+from .models import League, Game, Field, Division, Team, Slot, Coach, BODate
 import time
 from django.db.models import Q
 import pandas as pd
@@ -43,9 +43,17 @@ def importData():
     division_resource = resources.modelresource_factory(model=Division)()
     division_resource.import_data(my_dataset, dry_run=False)
 
+    # IMPORT BLACKOUTDATE
+    BODate.objects.all().delete()
+    my_dataset = tablib.Dataset(headers=['id', 'date'])
+    my_dataset.xlsx = open('data\TT\BlackOutDate-2020.xlsx', 'rb').read()
+    print(my_dataset)
+    BODate_resource = resources.modelresource_factory(model=BODate)()
+    BODate_resource.import_data(my_dataset, dry_run=False)
+
     # IMPORT TEAMS
     Team.objects.all().delete()
-    my_dataset = tablib.Dataset(headers=['id', 'name', 'description', 'league', 'division', 'coach'])
+    my_dataset = tablib.Dataset(headers=['id', 'name', 'description', 'league', 'division', 'coach', 'boDate'])
     my_dataset.xlsx = open('data\TT\Team-2020.xlsx', 'rb').read()
     print(my_dataset)
     team_resource = resources.modelresource_factory(model=Team)()
@@ -58,6 +66,19 @@ def importData():
     print(my_dataset)
     field_resource = resources.modelresource_factory(model=Field)()
     field_resource.import_data(my_dataset, dry_run=False)
+
+    # Generate all possible games
+    GENERATEGAMES = False
+    if GENERATEGAMES:
+        generateGames()
+    else:
+        # IMPORT GAMES
+        games = Game.objects.all().delete()
+        my_dataset = tablib.Dataset(headers=['id', 'team1', 'team2', 'league', 'score', 'enabled', 'complete'])
+        my_dataset.xlsx = open('data\TT\Game-2020.xlsx', 'rb').read()
+        print(my_dataset)
+        game_resource = resources.modelresource_factory(model=Game)()
+        game_resource.import_data(my_dataset, dry_run=False)
 
     # IMPORT SLOTS
     slots = Slot.objects.all().delete()
@@ -78,18 +99,7 @@ def importData():
     # from datetime import datetime
     # new_time = datetime.utcfromtimestamp(1508265552).replace(minute=0, second=0, microsecond=0)
 
-    # Generate all possible games
-    GENERATEGAMES = False
-    if GENERATEGAMES:
-        generateGames()
-    else:
-        # IMPORT GAMES
-        games = Game.objects.all().delete()
-        my_dataset = tablib.Dataset(headers=['id', 'team1', 'team2', 'league', 'score', 'enabled', 'complete'])
-        my_dataset.xlsx = open('data\TT\Game-2020.xlsx', 'rb').read()
-        print(my_dataset)
-        game_resource = resources.modelresource_factory(model=Game)()
-        game_resource.import_data(my_dataset, dry_run=False)
+
 
 
 def generateGames():
