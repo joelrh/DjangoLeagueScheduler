@@ -22,7 +22,8 @@ import enlighten
 
 class gameGenerator_df():
     def __init__(self):
-        self.games = pd.read_sql_query(str(Game.objects.all().order_by('?').query), connection)
+        self.games = pd.read_sql_query(str(Game.objects.all().order_by('?').query), connection) #This randomizes games
+        #self.games = pd.read_sql_query(str(Game.objects.all().query), connection)
         self.slots = pd.read_sql_query(str(Slot.objects.all().query), connection)
         self.slots.set_index('id', inplace=True)
         self.fields = pd.read_sql_query(str(Field.objects.all().query), connection)
@@ -40,7 +41,7 @@ class gameGenerator_df():
         self.lateTimeThreshold = 18
         self.DEBUG = False
         self.daysBetween = 0
-        self.coachOverlapTime = 45  # in minutes
+        self.coachOverlapTime = 0  # in minutes
 
     def progressBar(self,value, endvalue, bar_length=20):
 
@@ -59,7 +60,6 @@ class gameGenerator_df():
             print('-----------------------------------------------------------------------------------')
 
     def scheduleGames_df(self):
-
         # get settings
         settings = SiteConfiguration.objects.first()
         self.maxLateGames = settings.maxLateGames
@@ -667,7 +667,7 @@ class gameGenerator_df():
         MORETHANMINIMUMLEAGUESCHEDULEPENALTY = False
         INTERDIVISIONALHANDICAP = True
         LOWERTHANAVERAGESCHEDULEPENALTY = False
-        COACHMUTLIPLETEAMHANDICAP = False
+        COACHMUTLIPLETEAMHANDICAP = True
 
         score = 0
 
@@ -712,7 +712,7 @@ class gameGenerator_df():
         if COACHMUTLIPLETEAMHANDICAP:
             if len(self.teams[self.teams['coach_id'] == self.teams.ix[game.team1_id].coach_id]) > 1 or \
                     len(self.teams[self.teams['coach_id'] == self.teams.ix[game.team2_id].coach_id]) > 1:
-                score = score - 200
+                score = score - 4000
 
         # GAMES WITH LOWER THAN AVERAGE NUMBER OF GAMES ARE FURTHER HANDICAPPED - PER LEAGUE
         # THE LOGIC HERE IS WRONG - NEED TO GET NUM GAMES PER TEAM
@@ -734,6 +734,7 @@ class gameGenerator_df():
         self.games.ix[gameIndex, 'score'] = score
 
     def transferScheduleFromDfToObject(self):
+
         if self.DEBUG: print('POPULATING GAMES')
 
         scheduledGames = self.slots.query('not game_id.isnull()')
@@ -742,3 +743,6 @@ class gameGenerator_df():
             dbslot = Slot.objects.all().filter(pk=index)[0]
             dbslot.game = game
             dbslot.save()
+
+        #Create a sound to indicate completeness
+        print('\007')

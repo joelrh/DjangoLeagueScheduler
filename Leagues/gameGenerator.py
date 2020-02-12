@@ -22,7 +22,7 @@ def importData():
     Coach.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'firstName', 'lastName'])
     my_dataset.xlsx = open('data\TT\Coach-2020.xlsx', 'rb').read()
-    print(my_dataset)
+    # print(my_dataset)
     slot_resource = resources.modelresource_factory(model=Coach)()
     slot_resource.import_data(my_dataset, dry_run=False)
 
@@ -31,7 +31,7 @@ def importData():
     my_dataset = tablib.Dataset(
         headers=['id', 'name', 'abbreviation', 'description', 'maxLateGames', 'maxGames', 'gameDuration','daysBetween'])
     my_dataset.xlsx = open('data\TT\League-2020.xlsx', 'rb').read()
-    print(my_dataset)
+    # print(my_dataset)
     division_resource = resources.modelresource_factory(model=League)()
     division_resource.import_data(my_dataset, dry_run=False)
 
@@ -39,7 +39,7 @@ def importData():
     Division.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'name', 'abbreviation', 'description', 'league'])
     my_dataset.xlsx = open('data\TT\Division-2020.xlsx', 'rb').read()
-    print(my_dataset)
+    # print(my_dataset)
     division_resource = resources.modelresource_factory(model=Division)()
     division_resource.import_data(my_dataset, dry_run=False)
 
@@ -47,7 +47,7 @@ def importData():
     BODate.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'date'])
     my_dataset.xlsx = open('data\TT\BlackOutDate-2020.xlsx', 'rb').read()
-    print(my_dataset)
+    # print(my_dataset)
     BODate_resource = resources.modelresource_factory(model=BODate)()
     BODate_resource.import_data(my_dataset, dry_run=False)
 
@@ -55,7 +55,7 @@ def importData():
     Team.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'name', 'description', 'league', 'division', 'coach', 'boDate'])
     my_dataset.xlsx = open('data\TT\Team-2020.xlsx', 'rb').read()
-    print(my_dataset)
+    # print(my_dataset)
     team_resource = resources.modelresource_factory(model=Team)()
     team_resource.import_data(my_dataset, dry_run=False)
 
@@ -63,7 +63,7 @@ def importData():
     Field.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'name', 'description', 'league'])
     my_dataset.xlsx = open('data\TT\Field-2020.xlsx', 'rb').read()
-    print(my_dataset)
+    # print(my_dataset)
     field_resource = resources.modelresource_factory(model=Field)()
     field_resource.import_data(my_dataset, dry_run=False)
 
@@ -76,7 +76,7 @@ def importData():
         games = Game.objects.all().delete()
         my_dataset = tablib.Dataset(headers=['id', 'team1', 'team2', 'league', 'score', 'enabled', 'complete'])
         my_dataset.xlsx = open('data\TT\Game-2020.xlsx', 'rb').read()
-        print(my_dataset)
+        # print(my_dataset)
         game_resource = resources.modelresource_factory(model=Game)()
         game_resource.import_data(my_dataset, dry_run=False)
 
@@ -84,7 +84,7 @@ def importData():
     slots = Slot.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'field', 'primaryLeague', 'secondaryLeague', 'game', 'time', 'duration'])
     my_dataset.xlsx = open('data\TT\Slot-2020.xlsx', 'rb').read()
-    print(my_dataset)
+    # print(my_dataset)
     slot_resource = resources.modelresource_factory(model=Slot)()
     slot_resource.import_data(my_dataset, dry_run=False)
     # Round slot times to nearest minute
@@ -146,8 +146,14 @@ def removeSchedule():
 
 
 def scheduleGames():
-    GG = gameGenerator_df()
-    GG.scheduleGames_df()
+
+    while len(Slot.objects.all().filter(~Q(game=None))) != len(Game.objects.all()):
+        print('Num Games Scheduled: ', str(len(Slot.objects.all().filter(~Q(game=None)))))
+        print('Num Total Games:     ',str(len(Game.objects.all())))
+        print('Re-running Scheduler')
+        importData()
+        GG = gameGenerator_df()
+        GG.scheduleGames_df()
 
 
 def displayStats():
