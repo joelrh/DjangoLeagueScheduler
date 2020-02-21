@@ -97,7 +97,7 @@ class Team(models.Model):
     #coach = models.ManyToManyField(Coach)
 
     def __str__(self):
-        return str(self.name.__str__() + "-" + self.division.abbreviation.__str__() + "-" + self.league.__str__())
+        return str(self.league.abbreviation.__str__() + " " + self.name.__str__() + " " + self.division.abbreviation.__str__())
 
 
 class Field(models.Model):

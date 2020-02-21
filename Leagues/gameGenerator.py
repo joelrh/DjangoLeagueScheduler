@@ -17,12 +17,13 @@ def round_minutes(dt, direction, resolution):
 
 def importData():
     # ORDER MATTERS HERE
+    IMPORTDEBUG=False
 
     # IMPORT COACHES
     Coach.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'firstName', 'lastName'])
     my_dataset.xlsx = open('data\TT\Coach-2020.xlsx', 'rb').read()
-    # print(my_dataset)
+    if IMPORTDEBUG:print(my_dataset)
     slot_resource = resources.modelresource_factory(model=Coach)()
     slot_resource.import_data(my_dataset, dry_run=False)
 
@@ -31,7 +32,7 @@ def importData():
     my_dataset = tablib.Dataset(
         headers=['id', 'name', 'abbreviation', 'description', 'maxLateGames', 'maxGames', 'gameDuration','daysBetween'])
     my_dataset.xlsx = open('data\TT\League-2020.xlsx', 'rb').read()
-    # print(my_dataset)
+    if IMPORTDEBUG:print(my_dataset)
     division_resource = resources.modelresource_factory(model=League)()
     division_resource.import_data(my_dataset, dry_run=False)
 
@@ -39,7 +40,7 @@ def importData():
     Division.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'name', 'abbreviation', 'description', 'league'])
     my_dataset.xlsx = open('data\TT\Division-2020.xlsx', 'rb').read()
-    # print(my_dataset)
+    if IMPORTDEBUG:print(my_dataset)
     division_resource = resources.modelresource_factory(model=Division)()
     division_resource.import_data(my_dataset, dry_run=False)
 
@@ -47,7 +48,7 @@ def importData():
     BODate.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'date'])
     my_dataset.xlsx = open('data\TT\BlackOutDate-2020.xlsx', 'rb').read()
-    # print(my_dataset)
+    if IMPORTDEBUG:print(my_dataset)
     BODate_resource = resources.modelresource_factory(model=BODate)()
     BODate_resource.import_data(my_dataset, dry_run=False)
 
@@ -55,7 +56,7 @@ def importData():
     Team.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'name', 'description', 'league', 'division', 'coach', 'boDate'])
     my_dataset.xlsx = open('data\TT\Team-2020.xlsx', 'rb').read()
-    # print(my_dataset)
+    if IMPORTDEBUG:print(my_dataset)
     team_resource = resources.modelresource_factory(model=Team)()
     team_resource.import_data(my_dataset, dry_run=False)
 
@@ -63,7 +64,7 @@ def importData():
     Field.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'name', 'description', 'league'])
     my_dataset.xlsx = open('data\TT\Field-2020.xlsx', 'rb').read()
-    # print(my_dataset)
+    if IMPORTDEBUG:print(my_dataset)
     field_resource = resources.modelresource_factory(model=Field)()
     field_resource.import_data(my_dataset, dry_run=False)
 
@@ -76,7 +77,7 @@ def importData():
         games = Game.objects.all().delete()
         my_dataset = tablib.Dataset(headers=['id', 'team1', 'team2', 'league', 'score', 'enabled', 'complete'])
         my_dataset.xlsx = open('data\TT\Game-2020.xlsx', 'rb').read()
-        # print(my_dataset)
+        if IMPORTDEBUG:print(my_dataset)
         game_resource = resources.modelresource_factory(model=Game)()
         game_resource.import_data(my_dataset, dry_run=False)
 
@@ -84,7 +85,7 @@ def importData():
     slots = Slot.objects.all().delete()
     my_dataset = tablib.Dataset(headers=['id', 'field', 'primaryLeague', 'secondaryLeague', 'game', 'time', 'duration'])
     my_dataset.xlsx = open('data\TT\Slot-2020.xlsx', 'rb').read()
-    # print(my_dataset)
+    if IMPORTDEBUG:print(my_dataset)
     slot_resource = resources.modelresource_factory(model=Slot)()
     slot_resource.import_data(my_dataset, dry_run=False)
     # Round slot times to nearest minute
@@ -98,9 +99,6 @@ def importData():
     # TODO : Still seeing small number differences in seconds - may try implementing the "replace" function below
     # from datetime import datetime
     # new_time = datetime.utcfromtimestamp(1508265552).replace(minute=0, second=0, microsecond=0)
-
-
-
 
 def generateGames():
     print('GENERATING GAMES')
@@ -136,7 +134,6 @@ def generateGames():
         print('Num Games generated for all leagues')
         print(len(Game.objects.all()))
 
-
 def removeSchedule():
     slots = Slot.objects.all().filter(~Q(game=None))
     for slot in slots:
@@ -144,17 +141,33 @@ def removeSchedule():
         slot.game = None
         slot.save()
 
-
 def scheduleGames():
 
-    while len(Slot.objects.all().filter(~Q(game=None))) != len(Game.objects.all()):
-        print('Num Games Scheduled: ', str(len(Slot.objects.all().filter(~Q(game=None)))))
-        print('Num Total Games:     ',str(len(Game.objects.all())))
-        print('Re-running Scheduler')
-        importData()
+    REPEATUNTILDONE = False
+    if REPEATUNTILDONE:
+        # while len(Slot.objects.all().filter(~Q(game=None))) != len(Game.objects.all()):
+        while len(Slot.objects.all().filter(~Q(game=None))) <= len(Game.objects.all()) - 3:
+            print('Num Games Scheduled: ', str(len(Slot.objects.all().filter(~Q(game=None)))))
+            print('Num Total Games:     ',str(len(Game.objects.all())))
+            print('Re-running Scheduler')
+            print('Importing Data')
+            importData()
+            print('Import Complete')
+            GG = gameGenerator_df()
+            GG.scheduleGames_df()
+
+            # sec = input('Run Again?\n')/
+
+
+    else:
+        t = time.time()
+        # print('Importing Data')
+        # importData()
+        # print('Import Complete')
         GG = gameGenerator_df()
         GG.scheduleGames_df()
-
+        elapsed_time = time.time() - t
+        print('ELAPSED TIME:' + str(round(elapsed_time/60,1)) + " minutes")
 
 def displayStats():
     # TODO:  Add slot performance table (# of # scheduled per day)
@@ -177,6 +190,18 @@ def displayStats():
             df_slots.at[slot.time.strftime("%Y-%m-%d"), 'percent'] = (num_scheduled_slots_on_day/num_slots_on_day)*100
 
     # df_slots = pd.DataFrame(matrix, columns=['num_slots_on_day','num_scheduled_slots_on_day'], index=slot_names)
+
+    # For Week checks
+    Weeks = [[datetime.datetime.strptime("15-03-2020", "%d-%m-%Y"), datetime.datetime.strptime("22-03-2020","%d-%m-%Y")],
+             [datetime.datetime.strptime("22-03-2020", "%d-%m-%Y"), datetime.datetime.strptime("29-03-2020","%d-%m-%Y")],
+             [datetime.datetime.strptime("29-03-2020", "%d-%m-%Y"), datetime.datetime.strptime("05-04-2020","%d-%m-%Y")],
+             [datetime.datetime.strptime("05-04-2020", "%d-%m-%Y"), datetime.datetime.strptime("12-04-2020","%d-%m-%Y")],
+             [datetime.datetime.strptime("12-04-2020", "%d-%m-%Y"), datetime.datetime.strptime("19-04-2020","%d-%m-%Y")],
+             [datetime.datetime.strptime("19-04-2020", "%d-%m-%Y"), datetime.datetime.strptime("26-04-2020","%d-%m-%Y")],
+             [datetime.datetime.strptime("26-04-2020", "%d-%m-%Y"), datetime.datetime.strptime("03-05-2020","%d-%m-%Y")],
+             [datetime.datetime.strptime("03-05-2020", "%d-%m-%Y"), datetime.datetime.strptime("10-05-2020","%d-%m-%Y")],
+             [datetime.datetime.strptime("10-05-2020", "%d-%m-%Y"), datetime.datetime.strptime("17-05-2020","%d-%m-%Y")]
+             ]
 
 
 
@@ -206,6 +231,22 @@ def displayStats():
                                                            team1__league=team.league))
         numLateGames = len(Slot.objects.all().filter(Q(game__team1=team) | Q(game__team2=team), time__hour__gt=18))
         gamesWithTeam = Game.objects.all().filter(Q(team1=team) | Q(team2=team))
+        num0GameWeeks = 0
+        num1GameWeeks=0
+        num2GameWeeks=0
+        num3GameWeeks=0
+        num4GameWeeks=0
+        for week in Weeks:
+            if len(Slot.objects.all().filter(Q(game__team1=team) | Q(game__team2=team), time__gt=week[0], time__lt=week[1])) == 1:
+                num0GameWeeks = num0GameWeeks+1
+            if len(Slot.objects.all().filter(Q(game__team1=team) | Q(game__team2=team), time__gt=week[0], time__lt=week[1])) == 1:
+                num1GameWeeks = num1GameWeeks+1
+            if len(Slot.objects.all().filter(Q(game__team1=team) | Q(game__team2=team), time__gt=week[0], time__lt=week[1])) == 2:
+                num2GameWeeks = num2GameWeeks+1
+            if len(Slot.objects.all().filter(Q(game__team1=team) | Q(game__team2=team), time__gt=week[0], time__lt=week[1])) == 3:
+                num3GameWeeks = num3GameWeeks+1
+            if len(Slot.objects.all().filter(Q(game__team1=team) | Q(game__team2=team), time__gt=week[0], time__lt=week[1])) == 4:
+                num4GameWeeks = num4GameWeeks+1
 
         # slotsWithTeam = []
         slotsWithTeam = Slot.objects.all().filter(game__in=gamesWithTeam).order_by('time')
@@ -248,6 +289,11 @@ def displayStats():
         df.at[teamName, 'LateGames'] = numLateGames
         df.at[teamName, 'first'] = earliestGame
         df.at[teamName, 'last'] = latestGame
+        df.at[teamName, 'gamesPerWeek'] = ["0:"+str(num0GameWeeks) +
+                                              " 1:"+str(num1GameWeeks) +
+                                              " 2:"+str(num2GameWeeks) +
+                                              " 3:"+str(num3GameWeeks)]# +
+                                              # " 4:"+str(num4GameWeeks)]
         df.at[teamName, 'minTimeBetweenGames'] = minTimeBetweenGames
         df.at[teamName, 'maxTimeBetweenGames'] = maxTimeBetweenGames
         df.at[teamName, 'avgTimeBetweenGames'] = avgTimeBetweenGames
